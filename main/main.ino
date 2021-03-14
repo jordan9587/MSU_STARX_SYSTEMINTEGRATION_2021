@@ -12,7 +12,7 @@ float features[NUM_SAMPLES * NUM_AXES];
 int emg0 = A0;
 int emg1 = A1;
 int emg2 = A2;
-const char* currentState;
+const char* currentStateMovement;
 
 Eloquent::ML::Port::SVM clf;
 
@@ -98,6 +98,6 @@ void recordEMG() {
 void svmClassify() {
     // Use SVM to predict label for given emg input array.
     Serial.print("Detected gesture: ");
-    currentState = clf.predictLabel(features);
+    currentStateMovement = clf.predictLabel(features);
     Serial.println(currentState);
 }
