@@ -1,21 +1,40 @@
 #include "svmPrototype.h"
-
+#include <PID_v1.h>
 #define NUM_SAMPLES 90
 #define NUM_AXES 3
 #define INTERVAL 20 // Originally 90
 #define THRESHOLD 250 // NEW
 // To reduce spikes in reading we set a sensible value to truncate too large EMG voltage values.
 #define TRUNCATE 1000 // NEW
-
+//set the PID pins for Knee and Hip actuators
+#define PIN_INH 0
+#define PIN_OUTH 1
+#define PIN_INK 2
+#define PIN_OUTK 3
 float baseline[NUM_AXES];  // NEW
 float features[NUM_SAMPLES * NUM_AXES];
 int emg0 = A0;
 int emg1 = A1;
 int emg2 = A2;
+//PID object variables
 const char* currentStateMovement;
-
+int index = 1;
+double SetpointH, InputH, OutputH, SetpointK, InputK, OutputK;
+double HipP, HipI, HipD, KneeP, KneeI, KneeD;
+//Movement label values for Hip angle, Knee angle, Hip Setpoint, Knee Setpoint respectively
+float Standing[] = { 0, 0, 18.25, 21.21 };      //1
+float HeelStrike[] = { 20, 0, 16.22, 21.21 };   //2
+float LdgResp[] = { 20, 20, 19.13, 20.160 };    //3
+float MidStance[] = { 0, 5, 18.25, 20.98 };     //4
+float TmlStance[] = { -20, 0, 17.21, 21.21 };   //5
+float PreSwing[] = { -10, 40, 17.74, 18.85 };   //6
+float InitSwing[] = { 15, 60, 18.93, 17.39 };   //7
+float MidSwing[] = { 25, 25, 19.31, 19.86 };    //8
+float TmlSwing[] = { 20, 0, 19.13, 21.21 };     //9
+int arSize = sizeof(Standing) / sizeof(Standing[0]);
 Eloquent::ML::Port::SVM clf;
-
+PID Hpid(&InputH, &OutputH, &SetpointH, HipP, HipI, HipD, DIRECT);
+PID Kpid(&InputK, &OutputK, &SetpointK, KneeP, KneeI, KneeD, DIRECT);
 void readEMG(float &v0, float &v1,float &v2) {
   // Read each emg sensor and convert to voltage (0-5V)
   // Should be recorded as analogread * (5.0 / 1023.0) in final version.
@@ -28,6 +47,9 @@ void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
   calibrate();
+  SetpointH = Standing[2];
+  Hpid.SetOutputLimits(0,255);
+  Kpid.SetOutputLimits(0,255);
 }
 
 void loop() {
@@ -47,6 +69,7 @@ void loop() {
     recordEMG();
     // Use SVM to classify emg dataset
     svmClassify();
+    FSM(index);
   }
   else {
     // No movement detected, return 0 as voltage.
@@ -100,4 +123,69 @@ void svmClassify() {
     Serial.print("Detected gesture: ");
     currentStateMovement = clf.predictLabel(features);
     Serial.println(currentState);
+}
+void FSM(int index)
+{
+  InputH = analogRead(PIN_INH);
+  InputK = analogRead(PIN_INK);
+  switch (index)
+  {
+    case 1:           //Standing
+      SetpointH = Standing[2];
+      SetpointK = Standing[3];
+      PIDCompute(20, 30, 5, 60, 20, 5);
+      //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
+      break;
+    case 2:
+      SetpointH = HeelStrike[2];
+      SetpointK = HeelStrike[3];
+      PIDCompute(30, 10, 3, 60, 30, 3);
+      break;
+    case 3:           //LdgResp
+      SetpointH = LdgResp[2];
+      SetpointK = LdgResp[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 4:           //MidStance
+      SetpointH = MidStance[2];
+      SetpointK = MidStance[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 5:           //TmlStance
+      SetpointH = TmlStance[2];
+      SetpointK = TmlStance[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 6:           //PreSwing
+      SetpointH = PreSwing[2];
+      SetpointK = PreSwing[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 7:           //InitSwing
+      SetpointH = InitSwing[2];
+      SetpointK = InitSwing[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 8:           //MidSwing
+      SetpointH = MidSwing[2];
+      SetpointK = MidSwing[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+    case 9:           //TmlSwing
+      SetpointH = TmlSwing[2];
+      SetpointK = TmlSwing[3];
+      PIDCompute(0, 0, 0, 0, 0, 0);
+      break;
+     default:
+      PIDCompute(0, 0, 0, 0, 0, 0);
+    }
+}
+void PIDCompute(double HipP, double HipI, double HipD, double KneeP, double KneeI, double KneeD)
+{
+    Hpid.SetTunings(HipP, HipI, HipD);
+    Kpid.SetTunings(KneeP, KneeI, KneeD);
+    Hpid.Compute();
+    Kpid.Compute();
+    //analogWrite(PIN_OUTH, OutputH);
+    //analogWrite(PIN_OUTK, OutputK);
 }
