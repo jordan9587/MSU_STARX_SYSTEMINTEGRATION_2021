@@ -11,16 +11,17 @@
 #define PIN_OUTH 1
 #define PIN_INK 2
 #define PIN_OUTK 3
+#define KP 1200
+#define KI 25000
+#define KD 10000
 float baseline[NUM_AXES];  // NEW
 float features[NUM_SAMPLES * NUM_AXES];
 int emg0 = A0;
 int emg1 = A1;
 int emg2 = A2;
 //PID object variables
-const char* currentStateMovement;
-int index = 0;
+int currentStateMovement = 0;
 double SetpointH, InputH, OutputH, SetpointK, InputK, OutputK;
-double HipP, HipI, HipD, KneeP, KneeI, KneeD;
 //Movement label values for Hip angle, Knee angle, Hip Setpoint, Knee Setpoint respectively
 float Standing[] = { 0, 0, 18.25, 21.21 };      //1
 float HeelStrike[] = { 20, 0, 16.22, 21.21 };   //2
@@ -50,6 +51,8 @@ void setup() {
   SetpointH = Standing[2];
   Hpid.SetOutputLimits(0,255);
   Kpid.SetOutputLimits(0,255);
+  Hpid.SetTunings(KP, KI, KD);
+  Kpid.SetTunings(KD, KI, KD);
 }
 
 void loop() {
@@ -69,8 +72,7 @@ void loop() {
     recordEMG();
     // Use SVM to classify emg dataset
     svmClassify();
-    index = Dictionary(currentState);
-    FSM(index);
+    FSM(currentStateMovement);
   }
   else {
     // No movement detected, return 0 as voltage.
@@ -126,7 +128,7 @@ void svmClassify() {
     
     Serial.println(currentState);
 }
-void FSM(int index)
+void FSM(int currentStateMovement)
 {
   InputH = analogRead(PIN_INH);
   InputK = analogRead(PIN_INK);
@@ -135,82 +137,57 @@ void FSM(int index)
     case 0:           //Standing
       SetpointH = Standing[2];
       SetpointK = Standing[3];
-      PIDCompute(20, 30, 5, 60, 20, 5);
+      PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       break;
     case 1:
       SetpointH = HeelStrike[2];
       SetpointK = HeelStrike[3];
-      PIDCompute(30, 10, 3, 60, 30, 3);
+      PIDCompute();
       break;
     case 2:           //LdgResp
       SetpointH = LdgResp[2];
       SetpointK = LdgResp[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 3:           //MidStance
       SetpointH = MidStance[2];
       SetpointK = MidStance[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 4:           //TmlStance
       SetpointH = TmlStance[2];
       SetpointK = TmlStance[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 5:           //PreSwing
       SetpointH = PreSwing[2];
       SetpointK = PreSwing[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 6:           //InitSwing
       SetpointH = InitSwing[2];
       SetpointK = InitSwing[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 7:           //MidSwing
       SetpointH = MidSwing[2];
       SetpointK = MidSwing[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
     case 8:           //TmlSwing
       SetpointH = TmlSwing[2];
       SetpointK = TmlSwing[3];
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
       break;
      default:
-      PIDCompute(0, 0, 0, 0, 0, 0);
+      PIDCompute();
     }
 }
-int Dictionary(char * label)
+void PIDCompute()
 {
-  int N_movement =1 
-  return N_movement;
-}
-void PIDCompute(double HipP, double HipI, double HipD, double KneeP, double KneeI, double KneeD)
-{
-    Hpid.SetTunings(HipP, HipI, HipD);
-    Kpid.SetTunings(KneeP, KneeI, KneeD);
     Hpid.Compute();
     Kpid.Compute();
-    //analogWrite(PIN_OUTH, OutputH);
-    //analogWrite(PIN_OUTK, OutputK);
-}
-int Dictionary(String movement)
-{
-  String Database[] = {"Standing", "HeelStrike", "MidStance", "TmlStance"
-                     , "PreSwing", "InitSwing", "MidSwing", "TmlSwing" };
-  int index = 0;
-  while(true)
-  {
-    
-    if(Database[index] == movement)
-    {
-      Serial.println(Database[index]);
-      Serial.println(index);
-      return index;
-    }
-    
-    index++;
-  }
+    analogWrite(PIN_OUTH, OutputH);
+    analogWrite(PIN_OUTK, OutputK);
 }
