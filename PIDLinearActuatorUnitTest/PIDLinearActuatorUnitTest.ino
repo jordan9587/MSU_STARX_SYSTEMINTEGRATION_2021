@@ -1,8 +1,8 @@
 #include <PID_v1.h>
 //set the PID pins for Knee and Hip actuators
-#define PIN_INH A0
-#define PIN_OUTH A1
-#define PIN_INK 2
+#define PIN_INH A3
+#define PIN_OUTH A2
+#define PIN_INK A0
 #define PIN_OUTK 3
 #define KP 1200
 #define KI 25000
@@ -11,25 +11,25 @@
 // NEEDED: Get Length from Katherine!
 float MAXLENGTHHIP = 7.75; // 4 inches.
 float MAXLENGTHKNEE = 7.75; // 6 inches.
-float StandingHipSetpoint = ((17.26-16.5)/MAXLENGTHHIP)*1023;
-float HeelStrikeHipSetpoint = ((16.22-16.5)/MAXLENGTHHIP)*1023;
-float LdgRespHipSetpoint = ((16.22-16.5)/MAXLENGTHHIP)*1023;
-float MidStanceHipSetpoint = ((17.26-16.5)/MAXLENGTHHIP)*1023;
-float TmlStanceHipSetpoint = ((18.25-16.5)/MAXLENGTHHIP)*1023;
-float PreSwingHipSetpoint = ((17.77-16.5)/MAXLENGTHHIP)*1023;
-float InitSwingHipSetpoint = ((16.48-16.5)/MAXLENGTHHIP)*1023;
-float MidSwingHipSetpoint = ((15.97-16.5)/MAXLENGTHHIP)*1023;
-float TmlSwingHipSetpoint = ((16.22-16.5)/MAXLENGTHHIP)*1023;
+float StandingHipSetpoint = ((17.26-10)/MAXLENGTHHIP)*1023;
+float HeelStrikeHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
+float LdgRespHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
+float MidStanceHipSetpoint = ((17.26-10)/MAXLENGTHHIP)*1023;
+float TmlStanceHipSetpoint = ((18.25-10)/MAXLENGTHHIP)*1023;
+float PreSwingHipSetpoint = ((17.77-10)/MAXLENGTHHIP)*1023;
+float InitSwingHipSetpoint = ((16.48-10)/MAXLENGTHHIP)*1023;
+float MidSwingHipSetpoint = ((15.97-10)/MAXLENGTHHIP)*1023;
+float TmlSwingHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
 
-float StandingKneeSetpoint = ((21.21-16.5)/MAXLENGTHKNEE)*1023;
-float HeelStrikeKneeSetpoint = ((21.21-16.5)/MAXLENGTHKNEE)*1023;
-float LdgRespKneeSetpoint = ((20.16-16.5)/MAXLENGTHKNEE)*1023;
-float MidStanceKneeSetpoint = ((20.98-16.5)/MAXLENGTHKNEE)*1023;
-float TmlStanceKneeSetpoint = ((21.21-16.5)/MAXLENGTHKNEE)*1023;
-float PreSwingKneeSetpoint = ((18.85-16.5)/MAXLENGTHKNEE)*1023;
-float InitSwingKneeSetpoint = ((17.39-16.5)/MAXLENGTHKNEE)*1023;
-float MidSwingKneeSetpoint = ((19.86-16.5)/MAXLENGTHKNEE)*1023;
-float TmlSwingKneeSetpoint = ((21.21-16.5)/MAXLENGTHKNEE)*1023;
+float StandingKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
+float HeelStrikeKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
+float LdgRespKneeSetpoint = ((20.16-10)/MAXLENGTHKNEE)*1023;
+float MidStanceKneeSetpoint = ((20.98-10)/MAXLENGTHKNEE)*1023;
+float TmlStanceKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
+float PreSwingKneeSetpoint = ((18.85-10)/MAXLENGTHKNEE)*1023;
+float InitSwingKneeSetpoint = ((17.39-10)/MAXLENGTHKNEE)*1023;
+float MidSwingKneeSetpoint = ((19.86-10)/MAXLENGTHKNEE)*1023;
+float TmlSwingKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
 
 //PID object variables
 int currentStateMovement = 0;
@@ -93,9 +93,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
   {
     case 0:           //Standing
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = Standing[2];
-      //SetpointK = Standing[3];
+      SetpointK = Standing[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -109,9 +110,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 1:           //HealStrike
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = HeelStrike[2];
-      //SetpointK = HeelStrike[3];
+      SetpointK = HeelStrike[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -125,9 +127,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 2:           //LdgResp
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = LdgResp[2];
-      //SetpointK = LdgResp[3];
+      SetpointK = LdgResp[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -141,9 +144,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 3:           //MidStance
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = MidStance[2];
-      //SetpointK = MidStance[3];
+      SetpointK = MidStance[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -157,9 +161,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 4:           //TmlStance
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);;
       //InputK = analogRead(PIN_INK);
       SetpointH = TmlStance[2];
-      //SetpointK = TmlStance[3];
+      SetpointK = TmlStance[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -173,9 +178,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 5:           //PreSwing
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = PreSwing[2];
-      //SetpointK = PreSwing[3];
+      SetpointK = PreSwing[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -189,9 +195,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 6:           //InitSwing
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = InitSwing[2];
-      //SetpointK = InitSwing[3];
+      SetpointK = InitSwing[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -205,9 +212,10 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 7:           //MidSwing
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = MidSwing[2];
-      //SetpointK = MidSwing[3];
+      SetpointK = MidSwing[3];
       PIDCompute();
       //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
       if (arrayIndex == stateBufferSize)
@@ -221,6 +229,7 @@ void FSM(int currentStateMovement, int stateBuffer[], int stateBufferSize)
       }
     case 8:           //TmlSwing
       InputH = analogRead(PIN_INH);
+      InputK = analogRead(PIN_INH);
       //InputK = analogRead(PIN_INK);
       SetpointH = TmlSwing[2];
       //SetpointK = TmlSwing[3];
