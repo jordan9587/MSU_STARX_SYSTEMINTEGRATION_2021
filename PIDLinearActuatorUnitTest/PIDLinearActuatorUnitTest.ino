@@ -11,25 +11,25 @@
 // NEEDED: Get Length from Katherine!
 float MAXLENGTHHIP = 7.75; // 4 inches.
 float MAXLENGTHKNEE = 7.75; // 6 inches.
-float StandingHipSetpoint = ((17.26-10)/MAXLENGTHHIP)*1023;
-float HeelStrikeHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
-float LdgRespHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
-float MidStanceHipSetpoint = ((17.26-10)/MAXLENGTHHIP)*1023;
-float TmlStanceHipSetpoint = ((18.25-10)/MAXLENGTHHIP)*1023;
-float PreSwingHipSetpoint = ((17.77-10)/MAXLENGTHHIP)*1023;
-float InitSwingHipSetpoint = ((16.48-10)/MAXLENGTHHIP)*1023;
-float MidSwingHipSetpoint = ((15.97-10)/MAXLENGTHHIP)*1023;
-float TmlSwingHipSetpoint = ((16.22-10)/MAXLENGTHHIP)*1023;
+float StandingHipSetpoint = ((1)/MAXLENGTHHIP)*1023;
+float HeelStrikeHipSetpoint = ((2)/MAXLENGTHHIP)*1023;
+float LdgRespHipSetpoint = ((3)/MAXLENGTHHIP)*1023;
+float MidStanceHipSetpoint = ((4)/MAXLENGTHHIP)*1023;
+float TmlStanceHipSetpoint = ((5)/MAXLENGTHHIP)*1023;
+float PreSwingHipSetpoint = ((6)/MAXLENGTHHIP)*1023;
+float InitSwingHipSetpoint = ((7)/MAXLENGTHHIP)*1023;
+float MidSwingHipSetpoint = ((1)/MAXLENGTHHIP)*1023;
+float TmlSwingHipSetpoint = ((2)/MAXLENGTHHIP)*1023;
 
-float StandingKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
-float HeelStrikeKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
-float LdgRespKneeSetpoint = ((20.16-10)/MAXLENGTHKNEE)*1023;
-float MidStanceKneeSetpoint = ((20.98-10)/MAXLENGTHKNEE)*1023;
-float TmlStanceKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
-float PreSwingKneeSetpoint = ((18.85-10)/MAXLENGTHKNEE)*1023;
-float InitSwingKneeSetpoint = ((17.39-10)/MAXLENGTHKNEE)*1023;
-float MidSwingKneeSetpoint = ((19.86-10)/MAXLENGTHKNEE)*1023;
-float TmlSwingKneeSetpoint = ((21.21-10)/MAXLENGTHKNEE)*1023;
+float StandingKneeSetpoint = ((3)/MAXLENGTHKNEE)*1023;
+float HeelStrikeKneeSetpoint = ((4)/MAXLENGTHKNEE)*1023;
+float LdgRespKneeSetpoint = ((5)/MAXLENGTHKNEE)*1023;
+float MidStanceKneeSetpoint = ((6)/MAXLENGTHKNEE)*1023;
+float TmlStanceKneeSetpoint = ((7)/MAXLENGTHKNEE)*1023;
+float PreSwingKneeSetpoint = ((1)/MAXLENGTHKNEE)*1023;
+float InitSwingKneeSetpoint = ((2)/MAXLENGTHKNEE)*1023;
+float MidSwingKneeSetpoint = ((3)/MAXLENGTHKNEE)*1023;
+float TmlSwingKneeSetpoint = ((4)/MAXLENGTHKNEE)*1023;
 
 //PID object variables
 int currentStateMovement = 0;
