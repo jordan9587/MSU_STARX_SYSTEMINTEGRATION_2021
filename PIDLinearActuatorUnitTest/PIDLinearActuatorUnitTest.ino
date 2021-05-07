@@ -69,19 +69,20 @@ void setup() {
 void loop() {
   /* One Dimensional Traversal*/
   testCase1();
-  
+  /*
   testCase2();
   testCase3();
   testCase0();
-  /* Two Dimensional Traversal*/
+
   testCase4();
   testCase5();
   testCase6();
   testCase7();
   testCase8();
   testCase9();
-  /* Three+ Dimensional Traversal*/
+
   testCase10();
+  */
 }
 
 /*
