@@ -1,9 +1,9 @@
 #include <PID_v1.h>
 //set the PID pins for Knee and Hip actuators
-#define PIN_INH A3
+#define PIN_INH A0
+#define PIN_INK A1
 #define PIN_OUTH A2
-#define PIN_INK A0
-#define PIN_OUTK 3
+#define PIN_OUTK A3
 #define KP 1200
 #define KI 25000
 #define KD 10000
@@ -51,6 +51,8 @@ int ki = 250000;
 int kd = 10000;
 PID Hpid(&InputH, &OutputH, &SetpointH, kp, ki, kd, DIRECT);
 PID Kpid(&InputK, &OutputK, &SetpointK, kp, ki, kd, DIRECT);
+double ErrorH;
+double ErrorK;
 
 void setup() {
   // put your setup code here, to run once:
@@ -257,8 +259,12 @@ void PIDCompute()
 {
     Hpid.Compute();
     Kpid.Compute();
+    ErrorH = SetpointH - InputH;
+    ErrorK = SetpointK - InputK;
     analogWrite(PIN_OUTH, OutputH);
     analogWrite(PIN_OUTK, OutputK);
+    
+    
 }
 
 
