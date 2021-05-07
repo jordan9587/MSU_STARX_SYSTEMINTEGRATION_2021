@@ -21,15 +21,15 @@ float InitSwingHipSetpoint = ((7)/MAXLENGTHHIP)*1023;
 float MidSwingHipSetpoint = ((1)/MAXLENGTHHIP)*1023;
 float TmlSwingHipSetpoint = ((2)/MAXLENGTHHIP)*1023;
 
-float StandingKneeSetpoint = ((3)/MAXLENGTHKNEE)*1023;
-float HeelStrikeKneeSetpoint = ((4)/MAXLENGTHKNEE)*1023;
-float LdgRespKneeSetpoint = ((5)/MAXLENGTHKNEE)*1023;
-float MidStanceKneeSetpoint = ((6)/MAXLENGTHKNEE)*1023;
-float TmlStanceKneeSetpoint = ((7)/MAXLENGTHKNEE)*1023;
-float PreSwingKneeSetpoint = ((1)/MAXLENGTHKNEE)*1023;
-float InitSwingKneeSetpoint = ((2)/MAXLENGTHKNEE)*1023;
-float MidSwingKneeSetpoint = ((3)/MAXLENGTHKNEE)*1023;
-float TmlSwingKneeSetpoint = ((4)/MAXLENGTHKNEE)*1023;
+float StandingKneeSetpoint = ((1)/MAXLENGTHHIP)*1023;
+float HeelStrikeKneeSetpoint = ((2)/MAXLENGTHHIP)*1023;
+float LdgRespKneeSetpoint = ((3)/MAXLENGTHHIP)*1023;
+float MidStanceKneeSetpoint = ((4)/MAXLENGTHHIP)*1023;
+float TmlStanceKneeSetpoint = ((5)/MAXLENGTHHIP)*1023;
+float PreSwingKneeSetpoint = ((6)/MAXLENGTHHIP)*1023;
+float InitSwingKneeSetpoint = ((7)/MAXLENGTHHIP)*1023;
+float MidSwingKneeSetpoint = ((1)/MAXLENGTHHIP)*1023;
+float TmlSwingKneeSetpoint = ((2)/MAXLENGTHHIP)*1023;
 
 //PID object variables
 int currentStateMovement = 0;
@@ -57,6 +57,8 @@ double ErrorK;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
+  pinMode(PIN_INH, INPUT);
+  pinMode(PIN_OUTH, OUTPUT);
   SetpointH = Standing[2];
   Hpid.SetOutputLimits(0,255);
   Kpid.SetOutputLimits(0,255);
@@ -67,6 +69,7 @@ void setup() {
 void loop() {
   /* One Dimensional Traversal*/
   testCase1();
+  
   testCase2();
   testCase3();
   testCase0();
