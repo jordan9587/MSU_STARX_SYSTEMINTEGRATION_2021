@@ -263,14 +263,13 @@ void PIDCompute()
     ErrorK = SetpointK - InputK;
     analogWrite(PIN_OUTH, OutputH);
     analogWrite(PIN_OUTK, OutputK);
-    
-    
 }
 
 
 /*
 Test Cases
 */
+
 
 /* One Dimensional Traversal*/
 void testCase0()
@@ -285,7 +284,7 @@ void testCase0()
 
 void testCase1()
 {
-  printf("testCase1: Moves from State 0 is decreasing -> State 1.  (18.25 -> 16.22 inches).");
+  printf("testCase1: (1 -> 2 inches).");
   int stateBuffer[] = {1};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 0;
@@ -295,17 +294,17 @@ void testCase1()
 
 void testCase2()
 {
-  printf("testCase2: Moves from State 0 is increasing -> State 1. (18.25 -> 19.13 inches).");
-  int stateBuffer[] = {2};
+  printf("testCase2: (3 -> 1 inches).");
+  int stateBuffer[] = {0};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
-  currentStateMovement = 0;
+  currentStateMovement = 2;
   FSM(currentStateMovement, stateBuffer, stateBufferSize);
   printf("testCase2 Complete!\n");
 }
 
 void testCase3()
 {
-  printf("testCase3: Moves from  State 3 is equivalent -> State 3. (18.25 -> 18.25 inches).");
+  printf("testCase3: (2 -> 2 inches).");
   int stateBuffer[] = {3};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 3;
@@ -316,7 +315,7 @@ void testCase3()
 /* Two Dimensional Traversal*/
 void testCase4()
 {
-  printf("testCase4: Moves from State 1 is increasing -> State 5 is increasing -> State 6. (16.22 -> 17.74 -> 18.93 inches).");
+  printf("testCase4: (1 -> 6 -> 7 inches).");
   int stateBuffer[] = {5,6};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 1;
@@ -326,7 +325,7 @@ void testCase4()
 
 void testCase5()
 {
-  printf("testCase5: Moves from State 1 is increasing -> State 5 is decreasing -> State 1. (16.22 -> 17.74 -> 16.22 inches).");
+  printf("testCase5:  (2 -> 4 -> 2 inches).");
   int stateBuffer[] = {5,1};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 1;
@@ -336,7 +335,7 @@ void testCase5()
 
 void testCase6()
 {
-  printf("testCase6: Moves from State 8 is decreasing -> State 3 is increasing -> State 6.  (19.13 -> 18.25 -> 18.93 inches). ");
+  printf("testCase6: (2 -> 4 -> 7 inches). ");
   int stateBuffer[] = {3,6};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 8;
@@ -346,7 +345,7 @@ void testCase6()
 
 void testCase7()
 {
-  printf("testCase7: Moves from State 6 is increasing -> State 7 is equivalent -> State 7. (18.93 -> 19.31 -> 19.31 inches). ");
+  printf("testCase7:  (7 -> 1-> 1 inches). ");
   int stateBuffer[] = {7,7};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 6;
@@ -356,7 +355,7 @@ void testCase7()
 
 void testCase8()
 {
-  printf("testCase8: Moves from State 6 is equivalent -> State 7 is decreasing -> State 7. (19.13 -> 19.13 -> 18.25 inches). ");
+  printf("testCase8: (7 -> 1 -> 1 inches). ");
   int stateBuffer[] = {7,7};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 6;
@@ -366,7 +365,7 @@ void testCase8()
 
 void testCase9()
 {
-  printf("testCase9: Moves from State 7 is equivalent -> State 7 is equivalent -> State 7. (19.31 -> 19.31 -> 19.31 inches). ");
+  printf("testCase9: (6 -> 6 -> 6 inches). ");
   int stateBuffer[] = {7,7};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 7;
@@ -377,7 +376,7 @@ void testCase9()
 /* Three+ Dimensional Traversal*/
 void testCase10()
 {
-  printf("testCase10: Moves from State 1 us increasing -> State 3 is decreasing -> State 5 is increasing -> State 7 is decreasing -> State 2 is equivalent -> State 2 is equivalent -> State 8 is equivalent -> State 0 is decrease -> State 3 is equivalent -> State 7 is increasing -> State 7 (16.22 -> 18.25 -> 17.74 -> 19.31 -> 19.13 -> 19.13 -> 19.13 -> 18.25 -> 18.25 -> 19.31 inches).");
+  printf("testCase10: ( 2 -> 3 -> 6 -> 7 -> 3 -> 3 -> 2 -> 1 -> 4 -> 1 -> 1 inches).");
   int stateBuffer[] = {3,5,7,2,2,8,0,3,7,7};
   int stateBufferSize = sizeof(stateBuffer) / sizeof(stateBuffer[0]);
   currentStateMovement = 1;
