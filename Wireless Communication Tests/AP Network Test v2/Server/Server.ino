@@ -97,12 +97,12 @@ void loop() {
       if (client.available()) {
         char c = client.read();
         Serial.write(c);
-
+        
         // send a standard HTTP response header
         client.println("HTTP/1.1 200 OK");
         client.println("Content-Type: text/html");
         client.println("Connection: close");  // the connection will be closed after completion of the response
-        client.println("Refresh: 1");  // refresh the page automatically every 1 sec
+        client.println("Refresh: 0.01");  // refresh the page automatically every 1 sec
         client.println();
       }
     }

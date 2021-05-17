@@ -27,7 +27,7 @@ char server[] = "http://192.168.0.1/";
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;            // last time you connected to the server, in milliseconds
-const unsigned long postingInterval = 10L * 1000L; // delay between updates, in milliseconds
+const unsigned long postingInterval = 10L; // delay between updates, in milliseconds
 
 /* User Input */
 int emgPin = A0;
