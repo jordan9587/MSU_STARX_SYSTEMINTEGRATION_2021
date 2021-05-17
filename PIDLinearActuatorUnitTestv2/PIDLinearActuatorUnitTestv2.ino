@@ -23,6 +23,8 @@ void setup()
   pinMode(IN2, OUTPUT);
   pinMode(IO_PIN, INPUT);
   pinMode(ANV_PIN, OUTPUT);
+
+  Hpid.SetMode(AUTOMATIC);
   
   initiate();
   delay(1000);
@@ -36,45 +38,62 @@ void setup()
 void loop() 
 {
     //lenght input test
-//  digitalWrite(IN1, LOW);
-//  digitalWrite(IN2, LOW);
-//  analogWrite(ANV_PIN, 255);
+//  digitalWrite(IN1, 0);
+//  digitalWrite(IN2, 0);
+//  analogWrite(ANV_PIN, 127);
 //  delay(1000);
-//  currentLengthIO = pulseIn(IO_PIN, HIGH) / 1000 * 1023;
+  
+//  currentLengthIO = analogRead(IO_PIN);
+//  currentLengthIO = pulseIn(IO_PIN, LOW);
+//  Serial.print(currentLengthIO);
+//  Serial.print("---");
+//  currentLengthIO = pulseIn(IO_PIN, LOW);
 //  Serial.println(currentLengthIO);
+//Serial.println(PIND3);
+
+//Serial.println(PINC);
+
 
   //extention test
-//  currentLengthIO = pulseIn(IO_PIN, HIGH)  / 1000 * 1023;
+//  currentLengthIO = map(pulseIn(IO_PIN, LOW), 0, 1000, 0, 1023);
+//  Serial.println(currentLengthIO);
 //  switch(directionTest)
 //  {
 //    case 0:
-//    analogWrite(ANV_PIN,10);
-//    extend();
-//    if(currentLengthIO > 1000)
-//    {
-//      directionTest = 1;
-//    }
-//    break;
+//      analogWrite(ANV_PIN,255);
+////      extend();
+//      Serial.println("testing testing");
+//      if(currentLengthIO > 995)
+//      {
+//        Serial.println("Switching direction");
+//        directionTest = 1;
+//      }
+//      break;
 //    case 1:
-//    analogWrite(ANV_PIN,10);
-//    retract();
-//    if(currentLengthIO < 100)
-//    {
-//      directionTest = 0;
-//    }
-//    break;
+//      analogWrite(ANV_PIN,10);
+////      retract();
+//      if(currentLengthIO < 100)
+//      {
+//        Serial.println("Switching direction");
+//        directionTest = 0;
+//      }
+//      break;
 //  }
   //PID Test
-//  Hpid.SetTunings(HP,HI,HD);
-//  Hpid.Compute();
-//  if(OutputH < 0)
+  Hpid.SetTunings(HP,HI,HD);
+  InputH = map(pulseIn(IO_PIN, LOW), 0, 1000, 0, 1023);
+  Hpid.Compute();
+//  OutputH = map(OutputH, 0, 255, 0, 1023);
+  
+  Serial.println(OutputH);
+//  if(InputH < 0)
 //  {
-//    retract();
-//    analogWrite(ANV_PIN, abs(OutputH));
+////    retract();
+    analogWrite(ANV_PIN, abs(OutputH));
 //  }
-//  if(OutputH >= 0)
+//  if(InputH >= 0)
 //  {
-//    extend();
+////    extend();
 //    analogWrite(ANV_PIN, abs(OutputH)); 
 //  }
  
