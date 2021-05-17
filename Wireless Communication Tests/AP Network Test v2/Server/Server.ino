@@ -104,6 +104,7 @@ void loop() {
         client.println("Connection: close");  // the connection will be closed after completion of the response
         client.println("Refresh: 0.01");  // refresh the page automatically every 1 sec
         client.println();
+        break;
       }
     }
     // give the web browser time to receive the data
