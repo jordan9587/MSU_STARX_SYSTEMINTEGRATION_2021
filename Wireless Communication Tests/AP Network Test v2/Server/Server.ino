@@ -91,20 +91,12 @@ void loop() {
   WiFiClient client = server.available();
   if (client) {
     Serial.println("new client");
-    // an HTTP request ends with a blank line
-    boolean currentLineIsBlank = true;
+
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
         Serial.write(c);
         
-        // send a standard HTTP response header
-        client.println("HTTP/1.1 200 OK");
-        client.println("Content-Type: text/html");
-        client.println("Connection: close");  // the connection will be closed after completion of the response
-        client.println("Refresh: 0.01");  // refresh the page automatically every 1 sec
-        client.println();
-        break;
       }
     }
     // give the web browser time to receive the data

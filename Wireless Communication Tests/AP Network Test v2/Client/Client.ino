@@ -23,7 +23,8 @@ int status = WL_IDLE_STATUS;
 WiFiClient client;
 
 // server address:
-char server[] = "http://192.168.0.1/";
+//char server[] = "http://192.168.4.1/";
+byte server[] = {192, 168, 4, 1};
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;            // last time you connected to the server, in milliseconds
@@ -81,7 +82,7 @@ void loop() {
     Serial.write(c);
   }
 
-  // if ten seconds have passed since your last connection,
+  // if ten milliseconds have passed since your last connection,
   // then connect again and send data:
   if (millis() - lastConnectionTime > postingInterval) {
     httpRequest();
@@ -97,39 +98,26 @@ void httpRequest() {
   Serial.println("connecting...");
   // if there's a successful connection:
   if (client.connect(server, 80)) {
-    // if you've gotten to the end of the line (received a newline
-    // character) and the line is blank, the HTTP request has ended,
-    // so you can send a reply
-    if (c == '\n' && currentLineIsBlank) {
-      // send a standard HTTP response header
-      client.println("HTTP/1.1 200 OK");
-      client.println("Content-Type: text/html");
-      client.println("Connection: close");  // the connection will be closed after completion of the response
-      client.println("Refresh: 1");  // refresh the page automatically every 1 sec
-      client.println();
-      client.println("<!DOCTYPE HTML>");
-      client.println("<html>");
-      // output the value of each analog input pin
-      for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
-        int sensorReading = analogRead(analogChannel);
-        client.print("analog input ");
-        client.print(analogChannel);
-        client.print(" is ");
-        client.print(sensorReading);
-        client.println("<br />");
-      }
-      client.println("</html>");
-    }
-    if (c == '\n') {
-      // you're starting a new line
-      currentLineIsBlank = true;
-    } else if (c != '\r') {
-      // you've gotten a character on the current line
-      currentLineIsBlank = false;
-    }
-
-    // note the time that the connection was made:
-    lastConnectionTime = millis();
+    // send a standard HTTP response header
+    client.println("HTTP/1.1 200 OK");
+    client.println("Content-Type: text/html");
+    client.println("Connection: close");  // the connection will be closed after completion of the response
+    client.println("Refresh: 1");  // refresh the page automatically every 1 sec
+    client.println();
+    client.println("<!DOCTYPE HTML>");
+    client.println("<html>");
+    // output the value of each analog input pin
+    for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
+      int sensorReading = analogRead(analogChannel);
+      client.print("analog input ");
+      client.print(analogChannel);
+      client.print(" is ");
+      client.print(sensorReading);
+      client.println("<br />");
+     }
+     client.println("</html>");
+     // note the time that the connection was made:
+     lastConnectionTime = millis();
   } else {
     // if you couldn't make a connection:
     Serial.println("connection failed");
