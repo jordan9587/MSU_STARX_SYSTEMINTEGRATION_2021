@@ -1,26 +1,28 @@
 /*
-  WiFi AP mode
+  WiFi Web Server
 
-  This sketch creates an access point without internet
-  that other devices can connect to. Once connected, 
-  they can access a web server hosted on the board, and
-  read analog EMG value.
-  
-*/
-#include <SPI.h> 
+ A AP web server that reads analog values from clients.
+
+ This example is written for a network using WPA encryption. For
+ WEP or WPA, change the WiFi.begin() call accordingly.
+
+ Circuit:
+ * Analog inputs attached to pins A0 through A5 (optional)
+ */
+
+#include <SPI.h>
 #include <WiFiNINA.h>
-#include "login_credentials.h" 
 
-// Enter SSID and password in login_credentials library file.
+#include "login_credentials.h"
+
+///////please enter your sensitive data in the Secret tab/login_credentials.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
 char pass[] = SECRET_PASS;    // your network password (use for WPA, or use as key for WEP)
-int keyIndex = 0;                // your network key Index number (needed only for WEP)
+int keyIndex = 0;                 // your network key index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
 
-WiFiServer server(23);
-
-boolean alreadyConnected = false; // whether or not the client was connected previously
+WiFiServer server(80);
 
 void setup() {
   //Initialize serial and wait for port to open:
@@ -28,6 +30,8 @@ void setup() {
   while (!Serial) {
     ; // wait for serial port to connect. Needed for native USB port only
   }
+
+  Serial.println("Access Point Web Server");
 
   // check for the WiFi module:
   if (WiFi.status() == WL_NO_MODULE) {
@@ -41,6 +45,10 @@ void setup() {
     Serial.println("Please upgrade the firmware");
   }
 
+  // by default the local IP address will be 192.168.4.1
+  // you can override it with the following: E.g.
+  // WiFi.config(IPAddress(10, 0, 0, 1));
+
   // print the network name (SSID);
   Serial.print("Creating access point named: ");
   Serial.println(ssid);
@@ -53,27 +61,24 @@ void setup() {
     while (true);
   }
 
-  // wait 10 seconds for connection:
-  delay(10000);
+  // wait 5 seconds for connection:
+  delay(5000);
 
-  // start the web server on port 23
+  // start the web server on port 80
   server.begin();
 
   // you're connected now, so print out the status
-  printWiFiStatus();
-  Serial.println("AP setup successful.");
+  printWifiStatus();
 }
 
 
 void loop() {
   // compare the previous status to the current status
-  if (status != WiFi.status()) 
-  {
+  if (status != WiFi.status()) {
     // it has changed update the variable
     status = WiFi.status();
 
-    if (status == WL_AP_CONNECTED) 
-    {
+    if (status == WL_AP_CONNECTED) {
       // a device has connected to the AP
       Serial.println("Device connected to AP");
     } else {
@@ -81,40 +86,30 @@ void loop() {
       Serial.println("Device disconnected from AP");
     }
   }
-
-  WiFiClient client = server.available();   // listen for incoming clients
-  if (client) 
-  {                             // if you get a client,
-    Serial.println("new client");           // print a message out the serial port
-    // loop while the client's connected
-    while (client.connected()) 
-    {
-      if (!alreadyConnected) 
-      {
-        // clead out the input buffer:
-        client.flush();
-        Serial.println("We have a new client");
-        client.println("Hello, client!");
-        alreadyConnected = true;
-      }
   
-      if (client.available() > 0) 
-      {
-        // read the bytes incoming from the client:
+  // listen for incoming clients
+  WiFiClient client = server.available();
+  if (client) {
+    Serial.println("new client");
+
+    while (client.connected()) {
+      if (client.available()) {
         char c = client.read();
-        // echo the bytes back to the client:
-        server.write(c);
-        // echo the bytes to the server as well:
         Serial.write(c);
+        
       }
     }
+    // give the web browser time to receive the data
+    delay(1);
+
     // close the connection:
     client.stop();
     Serial.println("client disconnected");
   }
 }
 
-void printWiFiStatus() {
+
+void printWifiStatus() {
   // print the SSID of the network you're attached to:
   Serial.print("SSID: ");
   Serial.println(WiFi.SSID());
@@ -127,5 +122,4 @@ void printWiFiStatus() {
   // print where to go in a browser:
   Serial.print("To see this page in action, open a browser to http://");
   Serial.println(ip);
-
 }
