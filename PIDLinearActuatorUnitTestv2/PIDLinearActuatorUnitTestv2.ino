@@ -35,14 +35,15 @@ void loop()
       //lenght input test
 //  digitalWrite(IN1, 0);
 //  digitalWrite(IN2, 0);
-  analogWrite(ANV_PIN,0);
-  delay(5000);
-  currentLengthIO = PWMInput.getValue();
-  Serial.println(currentLengthIO);
-  analogWrite(ANV_PIN, 255);
-  delay(5000);
-  currentLengthIO = PWMInput.getValue();
-  Serial.println(currentLengthIO);
+//  analogWrite(ANV_PIN,0);
+//  delay(5000);
+//  currentLengthIO = PWMInput.getValue();
+//  Serial.println(currentLengthIO);
+//  analogWrite(ANV_PIN, 255);
+//  delay(5000);
+//  currentLengthIO = PWMInput.getValue();
+//  Serial.println(currentLengthIO);
+
   //extention test
 //  currentLengthIO = map(PWMInput.getValue(), 0, 1000, 0, 1023);
 //  switch(directionTest)
@@ -79,7 +80,7 @@ void loop()
     retract();
     analogWrite(ANV_PIN, abs(OutputH));
   }
-  if(InputH >= 0)
+  else if(OutputH >= 0)
   {
     extend();
     analogWrite(ANV_PIN, abs(OutputH)); 
