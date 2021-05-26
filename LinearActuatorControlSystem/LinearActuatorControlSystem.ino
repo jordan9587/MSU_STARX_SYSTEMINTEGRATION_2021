@@ -15,9 +15,8 @@ void setup() {
   pinMode(IOPIN, INPUT);
   
   /// User Input:
-  // Length of linear actuator from ranges 0-255.
-  setpoint = 100;
-  analogWrite(ANVPIN, 10); // Changes speed on values 0-255
+  setpoint = 100; // Changes setpoint length on values 0-255.
+  analogWrite(ANVPIN, 10); // Changes speed on values 0-255.
 }
 
 void loop() {
