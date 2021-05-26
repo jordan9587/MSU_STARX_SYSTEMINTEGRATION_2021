@@ -23,7 +23,6 @@ Eloquent::ML::Port::SVM clf;
 #define PIN_OUTH 1
 #define PIN_INK 2
 #define PIN_OUTK 3
-
 #define KP 1200
 #define KI 25000
 #define KD 10000
