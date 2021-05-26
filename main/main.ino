@@ -67,7 +67,7 @@ void loop() {
   v2 = constrain(v2, 0, HIGHERTHRESHOLD);
   while (motionDetected(v0, v1, v2) == false)
   {
-    // Wait until motion has been detected. Motion should be between 
+    // Wait until motion has been detected. Motion should be between LOWER THRESHOLD (255) - HIGHER THRESHOLD (1000).
   }
 
   // Record emg data into svm format [v0, v1, v2, v0, v1, v2, ... , NUM_SAMPLES'th]
