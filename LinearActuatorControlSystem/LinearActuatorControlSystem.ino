@@ -1,35 +1,36 @@
-#define ANV_PIN 7
+#define ANVPIN 7
 #define IN1 3
 #define IN2 4
-#define IO_PIN 5
+#define IOPIN 5
 
 double difference;
-
-// Length of linear actuator from ranges 0-255.
-double Setpoint = 100;
+double setpoint;
 
 void setup() {
+  Serial.begin(115200);
   // put your setup code here, to run once:
-  pinMode(ANV_PIN, OUTPUT);
+  pinMode(ANVPIN, OUTPUT);
   pinMode(IN1, OUTPUT);
   pinMode(IN2, OUTPUT);
-  pinMode(IO_PIN, INPUT);
-
-  analogWrite(ANV_PIN, 10); // Changes speed on values 0-255
-  Serial.begin(115200);
+  pinMode(IOPIN, INPUT);
+  
+  /// User Input:
+  // Length of linear actuator from ranges 0-255.
+  setpoint = 100;
+  analogWrite(ANVPIN, 10); // Changes speed on values 0-255
 }
 
 void loop() {
-  int Input_Current = analogRead(map(IO_PIN, 0, 1023, 0 , 255));     // reads the current input value between 0 - 255.
-  Serial.println("Input_Current: " + Input_Current);
+  int inputCurrent = analogRead(map(IOPIN, 0, 1023, 0 , 255));     // reads the current input value between 0 - 255.
+  Serial.println("Input_Current: " + inputCurrent);
   
-  difference = Setpoint - Input_Current;
+  difference = setpoint - inputCurrent;
 
-  if (difference > Input_Current) // Setpoint is greater length than current length.
+  if (difference > inputCurrent) // Setpoint is greater length than current length.
   {
     retract(); // retract the stroke
   }
-  else if (difference < Input_Current) // Setpoint is less than length of current length.
+  else if (difference < inputCurrent) // Setpoint is less than length of current length.
   {
     extend(); // extend the stroke
   }
