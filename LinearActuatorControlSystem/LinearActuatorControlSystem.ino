@@ -21,7 +21,8 @@ void setup() {
 
 void loop() {
   int inputCurrent = analogRead(map(IOPIN, 0, 1023, 0 , 255));     // reads the current input value between 0 - 255.
-  Serial.println("Input_Current: " + inputCurrent);
+  Serial.print("Current Linear Actuator Length: ");
+  Serial.print(inputCurrent);
   
   difference = setpoint - inputCurrent;
 
