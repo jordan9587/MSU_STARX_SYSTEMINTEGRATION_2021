@@ -13,8 +13,8 @@ double HD = 10000;
 PID pidH(&inputH, &outputH, &setpointH, HP, HI, HD, DIRECT); 
 
 // Rate of Change for Position to find velocity of linear actuator.
-unsigned long lastTime = 0;   // lastConnectionTime last time you connected to the server, in milliseconds.
-const unsigned long updateDelay = 1000L;    // postingInterval delay between updates, in milliseconds.
+unsigned long lastTime = 0;   // Last time you connected to the server, in milliseconds.
+const unsigned long updateDelay = 1000L;    // Delay between updates, in milliseconds.
 float previousDistance, currentDistance;
 float deltaSpeed = 0;   // Speed value calculated from change of position.
 
