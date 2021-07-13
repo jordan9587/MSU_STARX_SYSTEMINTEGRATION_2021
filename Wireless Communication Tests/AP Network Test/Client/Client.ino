@@ -31,7 +31,9 @@ unsigned long lastConnectionTime = 0;            // last time you connected to t
 const unsigned long postingInterval = 10L; // delay between updates, in milliseconds
 
 /* User Input */
-int emgPin = A0;
+int numberLine = 0;
+int userInputMessageCounter = 0;
+bool printOutputBool = false;
 
 // Buffer of HTML.
 char c;
@@ -103,10 +105,12 @@ void httpRequest() {
     client.println("Content-Type: text/html");
     client.println("Connection: close");  // the connection will be closed after completion of the response
     client.println("Refresh: 1");  // refresh the page automatically every 1 sec
-    client.println();
+    //client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html>");
     // output the value of each analog input pin
+    emgSensorRead(A0);
+    /*
     for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
       int sensorReading = analogRead(analogChannel);
       client.print("analog input ");
@@ -115,6 +119,8 @@ void httpRequest() {
       client.print(sensorReading);
       client.println("<br />");
      }
+     */
+     
      client.println("</html>");
      // note the time that the connection was made:
      lastConnectionTime = millis();
@@ -124,6 +130,39 @@ void httpRequest() {
   }
 }
 
+void emgSensorRead(int pin0)
+{
+  if (userInputMessageCounter == 0) {
+      Serial.println("Please submit anything to console in order to write new emg values.");
+      userInputMessageCounter += 1;
+  }
+  while(Serial.available() || (printOutputBool == true))    // Check if there is any user input
+  {       
+    // Reset while loop once reaching 100 lines of output. Require new user input to run function
+    // again.
+    if (numberLine >= 99)
+    {
+      Serial.readString();
+      printOutputBool = false;
+      numberLine = 0;
+      userInputMessageCounter = 0;
+      Serial.println("Done");
+    }
+    else
+    {
+      // Put functions here you want to repeat after user input.
+      // Read analog pins value.
+      float sensorValue0 = analogRead(pin0);
+      // Print analog pins value to client.
+      client.print(sensorValue0);
+      client.print("\n");
+      
+      numberLine += 1;
+      printOutputBool = true;
+    }
+
+  }
+}
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:

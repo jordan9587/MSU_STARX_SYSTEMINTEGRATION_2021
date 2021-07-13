@@ -90,12 +90,16 @@ void loop() {
   // listen for incoming clients
   WiFiClient client = server.available();
   if (client) {
-    Serial.println("new client");
+    //Serial.println("new client");
 
     while (client.connected()) {
       if (client.available()) {
         char c = client.read();
-        Serial.write(c);
+        if (isDigit(c)) {
+          Serial.write(c);
+        }
+        else {
+        }
         
       }
     }
@@ -104,7 +108,7 @@ void loop() {
 
     // close the connection:
     client.stop();
-    Serial.println("client disconnected");
+    //Serial.println("client disconnected");
   }
 }
 
