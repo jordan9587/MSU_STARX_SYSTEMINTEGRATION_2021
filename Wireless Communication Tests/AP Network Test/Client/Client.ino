@@ -10,7 +10,7 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 
-#include "emgToolbox.h"
+//#include "emgToolbox.h"
 //#include "login_credentials.h"
 
 ///////please enter your sensitive data in the Secret tab/login_credentials.h
@@ -112,8 +112,12 @@ void httpRequest() {
     //client.println();
     client.println("<!DOCTYPE HTML>");
     client.println("<html>");
+    
     // output the value of each analog input pin
-    emgSensorRead(A0);
+    float sensorValue0 = analogRead(pin0);
+    client.print(sensorValue0);
+    client.print("\n");
+    // emgSensorRead(A0);
     /*
     for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
       int sensorReading = analogRead(analogChannel);
@@ -189,7 +193,6 @@ void emgFeatureExtraction()
       client.print(emgFeatures[a]);
       client.print(", ");
    }
-  
 }
 */
 
