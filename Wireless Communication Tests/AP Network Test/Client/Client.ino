@@ -147,7 +147,7 @@ void emgSensorRead(int pin0)
     if (numberLine >= 99)
     {
       Serial.readString();
-      emgFeatureExtraction();
+      // emgFeatureExtraction();
       printOutputBool = false;
       numberLine = 0;
       userInputMessageCounter = 0;
@@ -170,6 +170,7 @@ void emgSensorRead(int pin0)
   }
 }
 
+"""
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
@@ -190,6 +191,7 @@ void emgFeatureExtraction()
    }
   
 }
+"""
 
 void printWifiStatus() {
   // print the SSID of the network you're attached to:
