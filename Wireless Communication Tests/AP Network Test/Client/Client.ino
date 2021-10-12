@@ -10,7 +10,8 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 
-#include "login_credentials.h"
+#include "emgToolbox.h"
+//#include "login_credentials.h"
 
 ///////please enter your sensitive data in the Secret tab/login_credentials.h
 char ssid[] = SECRET_SSID;        // your network SSID (name)
@@ -39,6 +40,9 @@ bool printOutputBool = false;
 char c;
 // Boolean for buffer newline.
 boolean currentLineIsBlank = true;
+
+// Buffer of EMG array
+double emgArray[99];
 
 void setup() {
   //Initialize serial and wait for port to open:
@@ -143,6 +147,7 @@ void emgSensorRead(int pin0)
     if (numberLine >= 99)
     {
       Serial.readString();
+      emgFeatureExtraction();
       printOutputBool = false;
       numberLine = 0;
       userInputMessageCounter = 0;
@@ -153,15 +158,37 @@ void emgSensorRead(int pin0)
       // Put functions here you want to repeat after user input.
       // Read analog pins value.
       float sensorValue0 = analogRead(pin0);
+      emgArray[numberLine] = sensorValue0;
       // Print analog pins value to client.
+      client.print("EMG Sensor Reading:");
       client.print(sensorValue0);
-      client.print("\n");
+      client.print(", ");
       
       numberLine += 1;
       printOutputBool = true;
     }
-
   }
+}
+
+// Prints all feature extraction results for emg array.
+void emgFeatureExtraction()
+{
+  emgToolbox toolbox(emgArray, 99, 0.01);
+  double emgFeatures[39] = {toolbox.ASM(), toolbox.ASS(), toolbox.AAC(), toolbox.ME(), toolbox.CARD(),
+                            toolbox.COV(), toolbox.DAMV(), toolbox.DASDV(), toolbox.DVARV(), toolbox.EMAV(),
+                            toolbox.EWL(), toolbox.IEMG(), toolbox.IQR(), toolbox.KURT(), toolbox.LCOV(),
+                            toolbox.LD(), toolbox.LDAMV(), toolbox.LDASDV(), toolbox.LTKEO(), toolbox.MFL(),
+                            toolbox.MAD(), toolbox.MAV(), toolbox.MSR(), toolbox.MMAV(), toolbox.MMAV2(), 
+                            toolbox.MYOP(), toolbox.FZC(), toolbox.RMS(), toolbox.SSI(), toolbox.SKEW(),
+                            toolbox.SSC(), toolbox.SD(), toolbox.TM(), toolbox.VAR(), toolbox.VAREMG(),
+                            toolbox.VO(), toolbox.WL(), toolbox.WA(), toolbox.ZC()}; 
+   client.print("\nEMG Feature Extractions:");
+   for (int a = 0; a < 38; a++)
+   {
+      client.print(emgFeatures[a]);
+      client.print(", ");
+   }
+  
 }
 
 void printWifiStatus() {
