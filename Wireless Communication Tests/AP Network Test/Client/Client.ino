@@ -114,7 +114,7 @@ void httpRequest() {
     client.println("<html>");
     
     // output the value of each analog input pin
-    float sensorValue0 = analogRead(pin0);
+    float sensorValue0 = analogRead(A0);
     client.print(sensorValue0);
     client.print("\n");
     // emgSensorRead(A0);
