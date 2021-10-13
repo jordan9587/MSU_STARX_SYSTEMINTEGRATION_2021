@@ -101,7 +101,7 @@ void httpRequest() {
   // close any connection before send a new request.
   // This will free the socket on the NINA module
   client.stop();
-  Serial.println("connecting...");
+  //Serial.println("connecting...");
   // if there's a successful connection:
   if (client.connect(server, 80)) {
     // send a standard HTTP response header
@@ -114,9 +114,8 @@ void httpRequest() {
     client.println("<html>");
     
     // output the value of each analog input pin
-    float sensorValue0 = analogRead(A0);
-    client.print(sensorValue0);
-    client.print("\n");
+    int sensorValue0 = analogRead(A0);
+    client.println(sensorValue0);
     // emgSensorRead(A0);
     /*
     for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
