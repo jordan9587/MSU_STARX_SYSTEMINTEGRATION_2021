@@ -107,13 +107,7 @@ void loop() {
       if (client.available()) 
       {
         char c = client.read();
-        if (isDigit(c)) 
-        {
-          Serial.write(c);
-        }
-        else {
-        }
-        
+        Serial.println(c);
       }
     }
     // Give the web browser time to receive the data

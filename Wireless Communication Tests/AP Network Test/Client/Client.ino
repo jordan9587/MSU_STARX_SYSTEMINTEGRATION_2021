@@ -16,9 +16,9 @@
 //#include "login_credentials.h"
 
 /* Please enter your sensitive data in the Secret tab/login_credentials.h */
-char ssid[] = "";        // Your network SSID (name)
+char ssid[] = "starxnetwork";        // Your network SSID (name)
 // Password has to be >= 8 length
-char pass[] = "";    // Your network password (use for WPA, or use as key for WEP)
+char pass[] = "starxtext";    // Your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;            // Your network key index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
@@ -128,7 +128,8 @@ void httpRequest()
     
     // Output the value of each analog input pin
     int sensorValue0 = analogRead(A0);
-    client.println(sensorValue0);
+    client.print(1, DEC);
+    
     Serial.println(sensorValue0);
     // emgSensorRead(A0);
     /*
@@ -177,7 +178,7 @@ void emgSensorRead(int pin0)
     {
       // Put functions here you want to repeat after user input.
       // Read analog pins value.
-      float sensorValue0 = analogRead(pin0);
+      int sensorValue0 = analogRead(pin0);
       emgArray[numberLine] = sensorValue0;
       // Print analog pins value to client.
       client.print("EMG Sensor Reading:");
