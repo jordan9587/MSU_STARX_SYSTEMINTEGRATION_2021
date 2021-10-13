@@ -19,6 +19,7 @@
 
 /* Please enter your sensitive data in the Secret tab/login_credentials.h */
 char ssid[] = "";        // Your network SSID (name)
+// Password has to be >= 8 length
 char pass[] = "";    // Your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;                 // Your network key index number (needed only for WEP)
 
