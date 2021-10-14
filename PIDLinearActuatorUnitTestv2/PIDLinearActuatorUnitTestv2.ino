@@ -45,7 +45,7 @@ void loop()
 //  Serial.println(currentLengthIO);
 
   //extention test
-//  currentLengthIO = map(PWMInput.getValue(), 0, 1000, 0, 1023);
+//  currentLengthIO = map(pulseIn(IO_PIN, LOW), 0, 1000, 0, 1023);
 //  switch(directionTest)
 //  {
 //    case 0:
