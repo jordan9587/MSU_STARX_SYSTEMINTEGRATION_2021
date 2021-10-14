@@ -1,61 +1,57 @@
-#define ANVPIN 7
-#define IN1 3
-#define IN2 4
-#define IOPIN 5
-
-double difference;
-double setpoint;
-
-void setup() {
-  Serial.begin(115200);
-  // put your setup code here, to run once:
-  pinMode(ANVPIN, OUTPUT);
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IOPIN, INPUT);
+volatile unsigned long timer[2]; //timer that holds the rising and falling edge of PIN 24/DIO1->reads position waveform
+volatile double PWMin; //holds Duty cycle value
+volatile long Duty;
+double Setpoint = 2;
+double error;
+byte IN1 = 26;
+byte IN2 = 27;
+byte ANV = A0;
+void setup() 
+{
+  Serial.begin(9600);
+  pinMode(24, INPUT);
+  pinMode(IN1,OUTPUT);
+  pinMode(IN2,OUTPUT);
+  pinMode(ANV,OUTPUT);
+  attachInterrupt(digitalPinToInterrupt(24),ISR1, CHANGE); //attaches interrupt service routine to PIN 24 and triggers anytime there is a change in input
+  pinMode(2,OUTPUT);
+  digitalWrite(A0,HIGH);
+}
+void loop() 
+{
   
-  /// User Input:
-  setpoint = 100; // Changes setpoint length on values 0-255.
-  analogWrite(ANVPIN, 10); // Changes speed on values 0-255.
+//  Serial.println(error);
+//  error = Setpoint - PWMin;
+//  Mdirection(error);
 }
-
-void loop() {
-  int inputCurrent = analogRead(map(IOPIN, 0, 1023, 0 , 255));     // reads the current input value between 0 - 255.
-  Serial.print("Current Linear Actuator Length: ");
-  Serial.print(inputCurrent);
-  
-  difference = setpoint - inputCurrent;
-
-  if (difference > inputCurrent) // Setpoint is greater length than current length.
+void ISR1() 
+{
+  switch(digitalRead(24))
   {
-    retract(); // retract the stroke
+    case 0:
+    timer[0] = micros();
+    break;
+    case 1:
+    timer[1] = micros();
+    Duty = timer[1] - timer[0];
+    PWMin = Duty*7.75/1000;
+    break;
   }
-  else if (difference < inputCurrent) // Setpoint is less than length of current length.
-  {
-    extend(); // extend the stroke
-  }
-  else // Setpoint is eqivalent length than current length.
-  {
-    
-  }
-
-  /*
-  // put your main code here, to run repeatedly:
-  extend();
-  delay(3000);
-  retract();
-  delay(3000);
-  */
 }
-
-void extend() {
-  Serial.println("Extending...");
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-}
-
-void retract() {
-  Serial.println("Retracting...");
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
+void Mdirection(double error)
+{
+  if(error < 0)
+  {
+    //extend
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+    //M_dir = 0;
+  }
+  if(error > 0)
+  {
+    //contract
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+    //M_dir = 1;
+  }
 }
