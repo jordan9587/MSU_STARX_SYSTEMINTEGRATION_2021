@@ -12,7 +12,7 @@
 #include <ArduinoLowPower.h>
 #include <RTCZero.h>
 
-//#include "emgToolbox.h"
+#include "emgToolbox.h"
 //#include "login_credentials.h"
 
 /* Please enter your sensitive data in the Secret tab/login_credentials.h */
@@ -34,18 +34,15 @@ byte server[] = {192, 168, 4, 1};
 unsigned long lastConnectionTime = 0;   // Last time you connected to the server, in milliseconds
 const unsigned long postingInterval = 10L;    // Delay between updates, in milliseconds
 
-/* User Input */
-int numberLine = 0;
-int userInputMessageCounter = 0;
-bool printOutputBool = false;
-
 // Buffer of HTML.
 char c;
-// Boolean for buffer newline.
-boolean currentLineIsBlank = true;
 
 // Buffer of EMG array
+int pointerEmg = 0;
 double emgArray[99];
+// Message being sent to host.
+String idEmg = "A: ";
+String clientMessage = String() + idEmg;
 
 void setup() 
 {
@@ -89,7 +86,6 @@ void loop()
    purposes only:
    an HTTP request ends with a blank line
   */
-  currentLineIsBlank = true;
   while (client.available()) 
   {
     c = client.read();
@@ -117,33 +113,29 @@ void httpRequest()
   // If there's a successful connection:
   if (client.connect(server, 80)) 
   {
-    // Send a standard HTTP response header
-    client.println("HTTP/1.1 200 OK");
-    client.println("Content-Type: text/html");
-    client.println("Connection: close");    // The connection will be closed after completion of the response
-    client.println("Refresh: 1");   // Refresh the page automatically every 1 sec
-    //client.println();
-    client.println("<!DOCTYPE HTML>");
-    client.println("<html>");
-    
-    // Output the value of each analog input pin
+
+    // Prepare to send clientMessage to host.
     int sensorValue0 = analogRead(A0);
-    client.print(1, DEC);
-    
-    Serial.println(sensorValue0);
-    // emgSensorRead(A0);
-    /*
-    for (int analogChannel = 0; analogChannel < 6; analogChannel++) {
-      int sensorReading = analogRead(analogChannel);
-      client.print("analog input ");
-      client.print(analogChannel);
-      client.print(" is ");
-      client.print(sensorReading);
-      client.println("<br />");
-     }
-     */
+    if (pointerEmg >= 98)
+    {
+      // Use EMG feature extraction toolbox for input metrics.
+      emgFeatureExtraction();
+      // Remove last ", " from clientMessage.
+      clientMessage.remove(clientMessage.length() - 1);
+      clientMessage.remove(clientMessage.length() - 1);
+      // Send clientMessage to host.
+      client.print(clientMessage);
+      client.println();
+      // Reset pointer/counter to do another calculation of clientMessage.
+      pointerEmg = 0;
+    }
+    else
+    {
+      emgArray[pointerEmg] = sensorValue0;
+      clientMessage = clientMessage + sensorValue0 + ", ";
+      pointerEmg += 1;
+    }
      
-     client.println("</html>");
      // Note the time that the connection was made:
      lastConnectionTime = millis();
   } 
@@ -152,49 +144,19 @@ void httpRequest()
     // If you couldn't make a connection:
     Serial.println("connection failed");
   }
+
+  
 }
 
-void emgSensorRead(int pin0)
-{
-  if (userInputMessageCounter == 0) 
-  {
-      Serial.println("Please submit anything to console in order to write new emg values.");
-      userInputMessageCounter += 1;
-  }
-  while(Serial.available() || (printOutputBool == true))    // Check if there is any user input
-  {       
-    // Reset while loop once reaching 100 lines of output. Require new user input to run function
-    // again.
-    if (numberLine >= 99)
-    {
-      Serial.readString();
-      // emgFeatureExtraction();
-      printOutputBool = false;
-      numberLine = 0;
-      userInputMessageCounter = 0;
-      Serial.println("Done");
-    }
-    else
-    {
-      // Put functions here you want to repeat after user input.
-      // Read analog pins value.
-      int sensorValue0 = analogRead(pin0);
-      emgArray[numberLine] = sensorValue0;
-      // Print analog pins value to client.
-      client.print("EMG Sensor Reading:");
-      client.print(sensorValue0);
-      client.print(", ");
-      
-      numberLine += 1;
-      printOutputBool = true;
-    }
-  }
-}
 
-/*
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
+  // Remove last ", " from clientMessage.
+  clientMessage.remove(clientMessage.length() - 1);
+  clientMessage.remove(clientMessage.length() - 1);
+  // Add a delimiter : to split emg feature extraction from raw emg data.
+  clientMessage = clientMessage + " : ";
   emgToolbox toolbox(emgArray, 99, 0.01);
   double emgFeatures[39] = {toolbox.ASM(), toolbox.ASS(), toolbox.AAC(), toolbox.ME(), toolbox.CARD(),
                             toolbox.COV(), toolbox.DAMV(), toolbox.DASDV(), toolbox.DVARV(), toolbox.EMAV(),
@@ -204,14 +166,12 @@ void emgFeatureExtraction()
                             toolbox.MYOP(), toolbox.FZC(), toolbox.RMS(), toolbox.SSI(), toolbox.SKEW(),
                             toolbox.SSC(), toolbox.SD(), toolbox.TM(), toolbox.VAR(), toolbox.VAREMG(),
                             toolbox.VO(), toolbox.WL(), toolbox.WA(), toolbox.ZC()}; 
-   client.print("\nEMG Feature Extractions:");
    for (int a = 0; a < 38; a++)
    {
-      client.print(emgFeatures[a]);
-      client.print(", ");
+      // Add each emg feature extraction metric to end of clientMessage.
+      clientMessage = clientMessage + emgFeatures[a] + ", ";
    }
 }
-*/
 
 void printWifiStatus() 
 {
