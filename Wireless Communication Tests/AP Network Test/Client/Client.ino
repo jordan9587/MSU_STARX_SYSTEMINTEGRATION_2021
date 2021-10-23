@@ -38,7 +38,6 @@ const unsigned long postingInterval = 10L;    // Delay between updates, in milli
 char c;
 
 // Buffer of EMG array
-int pointerEmg = 0;
 double emgArray[99];
 
 void setup() 
@@ -93,6 +92,7 @@ void loop()
    If ten milliseconds have passed since your last connection,
    then connect again and send data:
   */
+  Serial.println("Flag1");
   if (millis() - lastConnectionTime > postingInterval) 
   {
     httpRequest();
@@ -103,9 +103,11 @@ void loop()
 // This method makes a HTTP connection to the server:
 void httpRequest() 
 {
+  Serial.println("Flag2");
   // Message being sent to host.
   String idEmg = "A: ";
   String clientMessage = String() + idEmg;
+  int pointerEmg = 0;
   // Close any connection before send a new request.
   // This will free the socket on the NINA module
   client.stop();
@@ -116,8 +118,10 @@ void httpRequest()
 
     // Prepare to send clientMessage to host.
     int sensorValue0 = analogRead(A0);
+    Serial.println("Flag3");
     if (pointerEmg >= 98)
     {
+      Serial.println("Flag5");
       // Use EMG feature extraction toolbox for input metrics.
       //emgFeatureExtraction();
       // Remove last ", " from clientMessage.
@@ -134,6 +138,7 @@ void httpRequest()
     }
     else
     {
+      Serial.println("Flag4");
       emgArray[pointerEmg] = sensorValue0;
       clientMessage = clientMessage + sensorValue0 + ", ";
       pointerEmg += 1;
