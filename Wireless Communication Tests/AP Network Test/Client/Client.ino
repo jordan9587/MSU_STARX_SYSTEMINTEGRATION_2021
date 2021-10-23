@@ -40,9 +40,6 @@ char c;
 // Buffer of EMG array
 int pointerEmg = 0;
 double emgArray[99];
-// Message being sent to host.
-String idEmg = "A: ";
-String clientMessage = String() + idEmg;
 
 void setup() 
 {
@@ -106,6 +103,9 @@ void loop()
 // This method makes a HTTP connection to the server:
 void httpRequest() 
 {
+  // Message being sent to host.
+  String idEmg = "A: ";
+  String clientMessage = String() + idEmg;
   // Close any connection before send a new request.
   // This will free the socket on the NINA module
   client.stop();
@@ -151,7 +151,7 @@ void httpRequest()
   
 }
 
-
+/*
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
@@ -175,7 +175,7 @@ void emgFeatureExtraction()
       clientMessage = clientMessage + emgFeatures[a] + ", ";
    }
 }
-
+*/
 void printWifiStatus() 
 {
   // Print the SSID of the network you're attached to:
