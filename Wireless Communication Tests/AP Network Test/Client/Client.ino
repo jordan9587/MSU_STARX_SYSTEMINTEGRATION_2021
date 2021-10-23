@@ -118,17 +118,16 @@ void httpRequest()
 
     // Prepare to send clientMessage to host.
     int sensorValue0 = analogRead(A0);
-    Serial.println("Flag3");
+    Serial.println("sensorValue0: " + sensorValue0);
     if (pointerEmg >= 98)
     {
-      Serial.println("Flag5");
       // Use EMG feature extraction toolbox for input metrics.
       //emgFeatureExtraction();
       // Remove last ", " from clientMessage.
       clientMessage.remove(clientMessage.length() - 1);
       clientMessage.remove(clientMessage.length() - 1);
       // Check the Serial output is correct for client.
-      Serial.print(clientMessage);
+      Serial.print("clientMessage: " + clientMessage);
       Serial.print("\n");
       // Send clientMessage to host.
       client.print(clientMessage);
@@ -138,9 +137,9 @@ void httpRequest()
     }
     else
     {
-      Serial.println("Flag4");
       emgArray[pointerEmg] = sensorValue0;
       clientMessage = clientMessage + sensorValue0 + ", ";
+      Serial.println("clientMessage: " + clientMessage);
       pointerEmg += 1;
     }
      
