@@ -12,7 +12,7 @@
 #include <ArduinoLowPower.h>
 #include <RTCZero.h>
 
-//#include "emgToolbox.h"
+#include "emgToolbox.h"
 //#include "login_credentials.h"
 
 /* Please enter your sensitive data in the Secret tab/login_credentials.h */
@@ -32,26 +32,26 @@ byte server[] = {192, 168, 4, 1};
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;   // Last time you connected to the server, in milliseconds
-const unsigned long postingInterval = 10L;    // Delay between updates, in milliseconds
+const unsigned long postingInterval = 600L;    // Delay between updates, in milliseconds
 
 // Buffer of HTML.
 char c;
 
 // Buffer of EMG array
-double emgArray[99];
+int maxMatrixSize = 89;
+double emgArray[89];
 // Message being sent to host.
 String idEmg = "A: ";
 String clientMessage = String() + idEmg;
-int pointerEmg = 0;
 
 
-void setup() 
+void setup()
 {
   // Initialize serial and wait for port to open:
   Serial.begin(115200);
 
   // Check for the WiFi module:
-  if (WiFi.status() == WL_NO_MODULE) 
+  if (WiFi.status() == WL_NO_MODULE)
   {
     Serial.println("Communication with WiFi module failed!");
     // Don't continue
@@ -59,13 +59,13 @@ void setup()
   }
 
   String fv = WiFi.firmwareVersion();
-  if (fv < WIFI_FIRMWARE_LATEST_VERSION) 
+  if (fv < WIFI_FIRMWARE_LATEST_VERSION)
   {
     Serial.println("Please upgrade the firmware");
   }
 
   // Attempt to connect to WiFi network:
-  while (status != WL_CONNECTED) 
+  while (status != WL_CONNECTED)
   {
     Serial.print("Attempting to connect to SSID: ");
     Serial.println(ssid);
@@ -79,7 +79,7 @@ void setup()
   printWifiStatus();
 }
 
-void loop() 
+void loop()
 {
   /*
    If there's incoming data from the net connection.
@@ -87,7 +87,7 @@ void loop()
    purposes only:
    an HTTP request ends with a blank line
   */
-  while (client.available()) 
+  while (client.available())
   {
     c = client.read();
     Serial.write(c);
@@ -97,8 +97,7 @@ void loop()
    If ten milliseconds have passed since your last connection,
    then connect again and send data:
   */
-  Serial.println("Flag1");
-  if (millis() - lastConnectionTime > postingInterval) 
+  if (millis() - lastConnectionTime > postingInterval)
   {
     httpRequest();
   }
@@ -106,82 +105,132 @@ void loop()
 }
 
 // This method makes a HTTP connection to the server:
-void httpRequest() 
+void httpRequest()
 {
-  Serial.println("Flag2");
   // Close any connection before send a new request.
   // This will free the socket on the NINA module
   client.stop();
-  //Serial.println("connecting...");
   // If there's a successful connection:
-  if (client.connect(server, 80)) 
+  if (client.connect(server, 80))
   {
-
-    // Prepare to send clientMessage to host.
-    int sensorValue0 = analogRead(A0);
-    Serial.println("sensorValue0: " + sensorValue0);
-    if (pointerEmg >= 98)
+    // Reset message being sent to host.
+    String idEmg = "A: ";
+    String clientMessage = String() + idEmg;
+    for (int pointerEmg = 0; pointerEmg <= maxMatrixSize; pointerEmg++)
     {
-      // Use EMG feature extraction toolbox for input metrics.
-      //emgFeatureExtraction();
-      // Remove last ", " from clientMessage.
-      clientMessage.remove(clientMessage.length() - 1);
-      clientMessage.remove(clientMessage.length() - 1);
-      // Check the Serial output is correct for client.
-      Serial.print("clientMessage: " + clientMessage);
-      Serial.print("\n");
-      // Send clientMessage to host.
-      client.print(clientMessage);
-      client.println();
-      // Reset pointer/counter to do another calculation of clientMessage.
-      pointerEmg = 0;
-    }
-    else
-    {
+      // Prepare to send clientMessage to host.
+      int sensorValue0 = analogRead(A0);
+      if (pointerEmg == maxMatrixSize)
+      {
+        // Remove last ", " from clientMessage.
+        clientMessage.remove(clientMessage.length() - 1);
+        clientMessage.remove(clientMessage.length() - 1);
+        // Send clientMessage to host.
+        client.print(clientMessage);
+        client.println();
+        // Check the Serial output is correct for client.
+        // Check the Serial output is correct for client.
+        Serial.print("Finished Raw EMG Message: " + clientMessage);
+        Serial.print("\n");
+        // Use EMG feature extraction toolbox for input metrics.
+        emgFeatureExtraction();
+        break;
+ 
+      }
       emgArray[pointerEmg] = sensorValue0;
       clientMessage = clientMessage + sensorValue0 + ", ";
-      Serial.println("clientMessage: " + clientMessage);
-      pointerEmg += 1;
     }
      
      // Note the time that the connection was made:
      lastConnectionTime = millis();
-  } 
-  else 
+  }
+  else
   {
     // If you couldn't make a connection:
     Serial.println("connection failed");
   }
 
-  
+ 
 }
 
-/*
+
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
-  // Remove last ", " from clientMessage.
-  clientMessage.remove(clientMessage.length() - 1);
-  clientMessage.remove(clientMessage.length() - 1);
-  // Add a delimiter : to split emg feature extraction from raw emg data.
-  clientMessage = clientMessage + " : ";
+  // Reset message being sent to host.
+  String idEmg = "A: ";
+  String clientMessage = String() + idEmg;
   emgToolbox toolbox(emgArray, 99, 0.01);
-  double emgFeatures[39] = {toolbox.ASM(), toolbox.ASS(), toolbox.AAC(), toolbox.ME(), toolbox.CARD(),
-                            toolbox.COV(), toolbox.DAMV(), toolbox.DASDV(), toolbox.DVARV(), toolbox.EMAV(),
-                            toolbox.EWL(), toolbox.IEMG(), toolbox.IQR(), toolbox.KURT(), toolbox.LCOV(),
-                            toolbox.LD(), toolbox.LDAMV(), toolbox.LDASDV(), toolbox.LTKEO(), toolbox.MFL(),
-                            toolbox.MAD(), toolbox.MAV(), toolbox.MSR(), toolbox.MMAV(), toolbox.MMAV2(), 
-                            toolbox.MYOP(), toolbox.FZC(), toolbox.RMS(), toolbox.SSI(), toolbox.SKEW(),
-                            toolbox.SSC(), toolbox.SD(), toolbox.TM(), toolbox.VAR(), toolbox.VAREMG(),
-                            toolbox.VO(), toolbox.WL(), toolbox.WA(), toolbox.ZC()}; 
-   for (int a = 0; a < 38; a++)
-   {
-      // Add each emg feature extraction metric to end of clientMessage.
-      clientMessage = clientMessage + emgFeatures[a] + ", ";
+  
+ double ASM = toolbox.ASM();
+ double ASS = toolbox.ASS();
+ double AAC = toolbox.AAC();
+ double ME = toolbox.ME();
+ double COV = toolbox.COV();
+ double DAMV = toolbox.DAMV();
+ double DASDV = toolbox.DASDV();
+ double DVARV = toolbox.DVARV();
+ double EMAV = toolbox.EMAV();
+ double EWL = toolbox.EWL();
+ double IEMG = toolbox.IEMG();
+ double KURT = toolbox.KURT();
+ double LCOV = toolbox.LCOV();
+ double LD = toolbox.LD();
+ double LDAMV = toolbox.LDAMV();
+ double LDASDV = toolbox.LDASDV();
+ double LTKEO = toolbox.LTKEO();
+ double MFL = toolbox.MFL();
+ double MAD = toolbox.MAD();
+ double MAV = toolbox.MAV();
+ double MSR = toolbox.MSR();
+ double MMAV = toolbox.MMAV();
+ double MMAV2 = toolbox.MMAV2();
+ double MYOP = toolbox.MYOP();
+ double FZC = toolbox.FZC();
+ double RMS = toolbox.RMS();
+ double SSI = toolbox.SSI();
+ double SKEW = toolbox.SKEW();
+ double SSC = toolbox.SSC();
+ double SD = toolbox.SD();
+ double TM = toolbox.TM();
+ double VAR = toolbox.VAR();
+ double VAREMG = toolbox.VAREMG();
+ double VO = toolbox.VO();
+ double WL = toolbox.WL();
+ double WA = toolbox.WA();
+ double ZC = toolbox.ZC();
+
+ double emgFeatures[] = {ASM, ASS, AAC, ME,
+                          COV, DAMV, DASDV, DVARV, EMAV,
+                          EWL, IEMG, KURT, LCOV,
+                          LD, LDAMV, LDASDV, LTKEO, MFL,
+                          MAD, MAV, MSR, MMAV, MMAV2, 
+                          MYOP, FZC, RMS, SSI, SKEW,
+                          SSC, SD, TM, VAR, VAREMG,
+                          VO, WL, WA, ZC};
+
+  for (int a=0; a < (sizeof emgFeatures/sizeof emgFeatures[0]); a++) 
+  {
+      double val = emgFeatures[a];
+      String SerialData = "";
+      SerialData = String(val,5);
+      clientMessage = clientMessage + SerialData + String(", ");
    }
+  
+   // Remove last ", " from clientMessage.
+   clientMessage.remove(clientMessage.length() - 1);
+   clientMessage.remove(clientMessage.length() - 1);
+        
+   // Check the Serial output is correct for client.
+   Serial.print("Finished Metric Message: " + clientMessage);
+   Serial.print("\n");
+   
+   // Send clientMessage to host.
+   client.print(clientMessage);
+   client.println();
 }
-*/
-void printWifiStatus() 
+
+void printWifiStatus()
 {
   // Print the SSID of the network you're attached to:
   Serial.print("SSID: ");
