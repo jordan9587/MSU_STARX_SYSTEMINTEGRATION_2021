@@ -32,6 +32,10 @@ bool printOutputBool = false;
 int userInputMessageCounter = 0;
 int counter = 0;
 
+// Message that is Arduino string and contains one line of data from client emg.
+String serverMessage = String();
+
+
 void setup() 
 {
   // Initialize serial and wait for port to open:
@@ -113,7 +117,15 @@ void loop() {
       {
         // Prints each byte/character of the client to server serial monitor.
         char c = client.read();
-        Serial.println(c);
+        if (c == '\n')
+        {
+          Serial.println(serverMessage);
+          serverMessage = String();
+        }
+        else
+        {
+          serverMessage = serverMessage + String(c);
+        }
       }
     }
     // Give the web browser time to receive the data

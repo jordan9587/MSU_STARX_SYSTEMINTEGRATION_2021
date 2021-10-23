@@ -125,6 +125,8 @@ void httpRequest()
         // Remove last ", " from clientMessage.
         clientMessage.remove(clientMessage.length() - 1);
         clientMessage.remove(clientMessage.length() - 1);
+        // Add end of line to message for server to determine when to print.
+        clientMessage = clientMessage + String("\n");
         // Send clientMessage to host.
         client.print(clientMessage);
         client.println();
@@ -220,6 +222,9 @@ void emgFeatureExtraction()
    // Remove last ", " from clientMessage.
    clientMessage.remove(clientMessage.length() - 1);
    clientMessage.remove(clientMessage.length() - 1);
+
+   // Add end of line to message for server to determine when to print.
+   clientMessage = clientMessage + String("\n");
         
    // Check the Serial output is correct for client.
    Serial.print("Finished Metric Message: " + clientMessage);
