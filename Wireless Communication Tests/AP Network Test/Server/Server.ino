@@ -111,35 +111,9 @@ void loop() {
     {
       if (client.available()) 
       {
-
-
-        // Check for user entered anything in terminal to start recording.
-        if (userInputMessageCounter == 0) 
-        {
-          Serial.println("Please submit anything to console in order to write new emg values.");
-          userInputMessageCounter += 1;
-        }
-        while(Serial.available() || (printOutputBool == true))    // Check if there is any user input
-        {
-          // Put function here you want to repeat after user input.
-          printOutputBool = true;      
-          counter += 1;
-          //Serial.println(counter);
-          char c = client.read();
-          Serial.println(c);
-          // Check if number of lines of output is complete.
-          if (counter >= 1)
-          {
-            // Reset while loop. Require new user input to run function
-            // again.
-            Serial.readString();
-            printOutputBool = false;
-            counter = 0;
-            userInputMessageCounter = 0;
-            Serial.println("Done");
-          }
-    
-        }
+        // Prints each byte/character of the client to server serial monitor.
+        char c = client.read();
+        Serial.println(c);
       }
     }
     // Give the web browser time to receive the data

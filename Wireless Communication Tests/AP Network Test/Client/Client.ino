@@ -119,10 +119,13 @@ void httpRequest()
     if (pointerEmg >= 98)
     {
       // Use EMG feature extraction toolbox for input metrics.
-      emgFeatureExtraction();
+      //emgFeatureExtraction();
       // Remove last ", " from clientMessage.
       clientMessage.remove(clientMessage.length() - 1);
       clientMessage.remove(clientMessage.length() - 1);
+      // Check the Serial output is correct for client.
+      Serial.print(clientMessage);
+      Serial.print("\n");
       // Send clientMessage to host.
       client.print(clientMessage);
       client.println();
