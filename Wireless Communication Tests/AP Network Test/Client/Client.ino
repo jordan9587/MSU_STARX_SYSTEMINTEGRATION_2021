@@ -39,6 +39,11 @@ char c;
 
 // Buffer of EMG array
 double emgArray[99];
+// Message being sent to host.
+String idEmg = "A: ";
+String clientMessage = String() + idEmg;
+int pointerEmg = 0;
+
 
 void setup() 
 {
@@ -104,10 +109,6 @@ void loop()
 void httpRequest() 
 {
   Serial.println("Flag2");
-  // Message being sent to host.
-  String idEmg = "A: ";
-  String clientMessage = String() + idEmg;
-  int pointerEmg = 0;
   // Close any connection before send a new request.
   // This will free the socket on the NINA module
   client.stop();
