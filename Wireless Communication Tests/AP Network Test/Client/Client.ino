@@ -160,7 +160,7 @@ void emgFeatureExtraction()
 {
     // Reset message being sent to host.
     String clientMessage = String() + idEmg;
-    emgToolbox toolbox(emgArray, 99, 0.01);
+    emgToolbox toolbox(emgArray, maxMatrixSize, 0.01);
     // Since we can't initalise function in array define metrics here.
     double ASM = toolbox.ASM();
     double ASS = toolbox.ASS();
