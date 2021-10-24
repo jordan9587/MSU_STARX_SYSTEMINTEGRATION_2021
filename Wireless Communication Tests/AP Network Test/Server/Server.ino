@@ -28,12 +28,12 @@ int status = WL_IDLE_STATUS;
 WiFiServer server(80);
 
 // User input control
-bool printOutputBool = false;
-int userInputMessageCounter = 0;
 int lineCounter = 0;
+bool readyUserInput = false;
 
 // Message that is Arduino string and contains one line of data from client emg.
 String serverMessage = String();
+int bytesSerialConsole = 0;
 
 
 void setup() 
@@ -115,41 +115,54 @@ void loop() {
         {
             if (client.available()) 
             {
-
-
-                if (userInputMessageCounter == 0) 
+              
+                if (bytesSerialConsole == 0) 
                 {
-                    Serial.println("Please submit anything to console in order to write new emg values.");
-                    userInputMessageCounter += 1;
+                    Serial.println("Please submit 's' to console in order to write new emg values.");
+                    bytesSerialConsole = 1;
                 }
-                while(Serial.available() || (printOutputBool == true))		// Check if there is any user input.
+                Serial.println(Serial.available());
+                while(Serial.available() != 0)    // Check if there is any user input.
                 {
-                    // Put function here you want to repeat after user input.
-                    printOutputBool = true;
-                    // Read each character from client.
-                    char c = client.read();
-                    if (c == '\n')
-                    {
-                        // Once newline is found in message from client, restart message.
-                        Serial.println(serverMessage);
-                        serverMessage = String();
-                        lineCounter += 1;
-                        break;
-                    }
-                    else
-                    {
-                        // Append each chracter to string. This is the same as Serial.readString();
-                        serverMessage = serverMessage + String(c);
-                    }
-                    // Two lines have been printed to serial monitor.
-                    if (lineCounter == 2)
-                    {
-                        // Reset while loop. Require new user input to run function again.
-                        printOutputBool = false;
-                        lineCounter = 0;
-                        userInputMessageCounter = 0;
-                    }
+                      //Serial.println("readyUserInput is currently");
+                      //Serial.println(readyUserInput);
+                      // Put function here you want to repeat after user input.
+                      char c = client.read();
+                      if (c == '\t')
+                      {
+                          // Once newline is found in message from client, restart message.
+                          Serial.println(serverMessage);
+                          serverMessage = String();
+                          
+                          Serial.println("Restart user input!");
+                          // Reset while loop. Require new user input to run function again.
+                          bytesSerialConsole = 0;
+                          Serial.readString();
+                          break;
+                      }
+                      else
+                      {
+                          // Append each chracter to string. This is the same as Serial.readString();
+                          serverMessage = serverMessage + String(c);
+                      }
                 }
+
+                /*
+                char c = client.read();
+                if (c == '\t')
+                {
+                    // Once newline is found in message from client, restart message.
+                    Serial.println(serverMessage);
+                    serverMessage = String();
+                    lineCounter += 1;
+                    break;
+                }
+                else
+                {
+                    // Append each chracter to string. This is the same as Serial.readString();
+                    serverMessage = serverMessage + String(c);
+                }
+                */
 
 
             }

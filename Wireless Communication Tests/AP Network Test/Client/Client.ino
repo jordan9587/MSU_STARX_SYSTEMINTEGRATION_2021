@@ -32,14 +32,14 @@ byte server[] = {192, 168, 4, 1};
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;   // Last time you connected to the server, in milliseconds
-const unsigned long postingInterval = 600L;    // Delay between updates, in milliseconds
+const unsigned long postingInterval = 1000L;    // Delay between updates, in milliseconds
 
 // Buffer of HTML.
 char c;
 
 // Buffer of EMG array
-const int maxMatrixSize = 400;
-double emgArray[maxMatrixSize];
+int maxMatrixSize = 400;
+double emgArray[400];
 
 // Message being sent to host.
 String idEmg = "A: ";
@@ -127,7 +127,7 @@ void httpRequest()
             clientMessage.remove(clientMessage.length() - 1);
             clientMessage.remove(clientMessage.length() - 1);
             // Add end of line to message for server to determine when to print.
-            clientMessage = clientMessage + String("\n");
+            clientMessage = clientMessage;
             // Send clientMessage to host.
             client.print(clientMessage);
             client.println();
@@ -135,7 +135,6 @@ void httpRequest()
             // Check the Serial output is correct for client.
             Serial.print("Finished Raw EMG Message: " + clientMessage);
             Serial.print("\n");
-            // Use EMG feature extraction toolbox for input metrics.
             emgFeatureExtraction();
             break;
     
@@ -158,9 +157,10 @@ void httpRequest()
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
+    
     // Reset message being sent to host.
-    String clientMessage = String() + idEmg;
-    emgToolbox toolbox(emgArray, maxMatrixSize, 0.01);
+    String clientMessage2 = String() + idEmg;
+    emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
     // Since we can't initalise function in array define metrics here.
     double ASM = toolbox.ASM();
     double ASS = toolbox.ASS();
@@ -199,6 +199,7 @@ void emgFeatureExtraction()
     double WL = toolbox.WL();
     double WA = toolbox.WA();
     double ZC = toolbox.ZC();
+    
     // Add each metric to array of emg features.
     double emgFeatures[] = {ASM, ASS, AAC, ME,
                             COV, DAMV, DASDV, DVARV, EMAV,
@@ -214,22 +215,22 @@ void emgFeatureExtraction()
         double val = emgFeatures[a];
         String SerialData = "";
         SerialData = String(val,5);
-        clientMessage = clientMessage + SerialData + String(", ");
+        clientMessage2 = clientMessage2 + SerialData + String(", ");
     }
     
     // Remove last ", " from clientMessage.
-    clientMessage.remove(clientMessage.length() - 1);
-    clientMessage.remove(clientMessage.length() - 1);
+    clientMessage2.remove(clientMessage2.length() - 1);
+    clientMessage2.remove(clientMessage2.length() - 1);
 
     // Add end of line to message for server to determine when to print.
-    clientMessage = clientMessage + String("\n");
+    clientMessage2 = clientMessage2 + String("\n") + String("\t");
             
     // Check the Serial output is correct for client.
-    Serial.print("Finished Metric Message: " + clientMessage);
+    Serial.print("Finished Metric Message: " + clientMessage2);
     Serial.print("\n");
     
     // Send clientMessage to host.
-    client.print(clientMessage);
+    client.print(clientMessage2);
     client.println();
 }
 
