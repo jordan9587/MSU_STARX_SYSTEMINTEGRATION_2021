@@ -38,8 +38,8 @@ const unsigned long postingInterval = 600L;    // Delay between updates, in mill
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 89;
-double emgArray[89];
+int maxMatrixSize = 2500;
+double emgArray[2500];
 // Message being sent to host.
 String idEmg = "A: ";
 String clientMessage = String() + idEmg;

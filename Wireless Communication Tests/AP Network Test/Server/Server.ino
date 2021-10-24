@@ -115,17 +115,17 @@ void loop() {
     {
       if (client.available()) 
       {
-        // Prints each byte/character of the client to server serial monitor.
-        char c = client.read();
-        if (c == '\n')
-        {
-          Serial.println(serverMessage);
-          serverMessage = String();
-        }
-        else
-        {
-          serverMessage = serverMessage + String(c);
-        }
+         char c = client.read();
+         if (c == '\n')
+         {
+            Serial.println(serverMessage);
+            serverMessage = String();
+            break;
+         }
+         else
+         {
+            serverMessage = serverMessage + String(c);
+         }
       }
     }
     // Give the web browser time to receive the data
