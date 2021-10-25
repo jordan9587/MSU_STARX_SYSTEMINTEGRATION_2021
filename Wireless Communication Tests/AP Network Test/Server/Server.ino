@@ -35,7 +35,6 @@ bool readyUserInput = false;
 String serverMessage = String();
 bool userPromptSubmitted = false;
 
-
 void setup() 
 {
     // Initialize serial and wait for port to open:
@@ -115,36 +114,7 @@ void loop() {
         {
             if (client.available()) 
             {
-                if (userPromptSubmitted == false)
-                {
-                    Serial.println("Please submit 's' to console in order to write new emg values.");
-                    Serial.println(Serial.available());
-                    userPromptSubmitted = true;
-                }
-                while (Serial.available() == 0) 
-                {
-                    // Wait for User to Input data.
-                }
-                // User has entered input.
-                // Read client messages by each char.
-                char c = client.read();
-                if (c == '\t')
-                {
-                    // Once newline is found in message from client, restart message.
-                    Serial.println(serverMessage);
-                    serverMessage = String();
-                    // Reset while loop. Require new user input to run function again in serial console.
-                    Serial.readString();
-                    userPromptSubmitted = false;
-                    //break;
-                }
-                else
-                {
-                    // Append each chracter to string. This is the same as Serial.readString();
-                    serverMessage = serverMessage + String(c);
-                }
-
-                /*
+                
                 char c = client.read();
                 if (c == '\t')
                 {
@@ -159,7 +129,7 @@ void loop() {
                     // Append each chracter to string. This is the same as Serial.readString();
                     serverMessage = serverMessage + String(c);
                 }
-                */
+                
 
 
             }

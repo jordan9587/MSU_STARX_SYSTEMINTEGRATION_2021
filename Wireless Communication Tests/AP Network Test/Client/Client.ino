@@ -32,14 +32,14 @@ byte server[] = {192, 168, 4, 1};
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;   // Last time you connected to the server, in milliseconds
-const unsigned long postingInterval = 1000L;    // Delay between updates, in milliseconds
+const unsigned long postingInterval = 550L;    // Delay between updates, in milliseconds
 
 // Buffer of HTML.
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 400;
-double emgArray[400];
+int maxMatrixSize = 100;
+double emgArray[100];
 
 // Message being sent to host.
 String idEmg = "A: ";
@@ -119,28 +119,28 @@ void httpRequest()
         String clientMessage = String() + idEmg;
         for (int pointerEmg = 0; pointerEmg <= maxMatrixSize; pointerEmg++)
         {
-        // Prepare to send clientMessage to host.
-        int sensorValue0 = analogRead(A0);
-        if (pointerEmg == maxMatrixSize)
-        {
-            // Remove last ", " from clientMessage.
-            clientMessage.remove(clientMessage.length() - 1);
-            clientMessage.remove(clientMessage.length() - 1);
-            // Add end of line to message for server to determine when to print.
-            clientMessage = clientMessage;
-            // Send clientMessage to host.
-            client.print(clientMessage);
-            client.println();
-            // Check the Serial output is correct for client.
-            // Check the Serial output is correct for client.
-            Serial.print("Finished Raw EMG Message: " + clientMessage);
-            Serial.print("\n");
-            emgFeatureExtraction();
-            break;
-    
-        }
-        emgArray[pointerEmg] = sensorValue0;
-        clientMessage = clientMessage + sensorValue0 + ", ";
+            // Prepare to send clientMessage to host.
+            int sensorValue0 = analogRead(A0);
+            if (pointerEmg == maxMatrixSize)
+            {
+                // Remove last ", " from clientMessage.
+                clientMessage.remove(clientMessage.length() - 1);
+                clientMessage.remove(clientMessage.length() - 1);
+                // Add end of line to message for server to determine when to print.
+                clientMessage = clientMessage;
+                // Send clientMessage to host.
+                client.print(clientMessage);
+                client.println();
+                // Check the Serial output is correct for client.
+                // Check the Serial output is correct for client.
+                Serial.print("Finished Raw EMG Message: " + clientMessage);
+                Serial.print("\n");
+                emgFeatureExtraction();
+                break;
+        
+            }
+            emgArray[pointerEmg] = sensorValue0;
+            clientMessage = clientMessage + sensorValue0 + ", ";
         }
         
         // Note the time that the connection was made:
