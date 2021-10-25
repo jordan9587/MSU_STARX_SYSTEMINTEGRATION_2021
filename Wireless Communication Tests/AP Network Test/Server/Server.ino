@@ -33,7 +33,7 @@ bool readyUserInput = false;
 
 // Message that is Arduino string and contains one line of data from client emg.
 String serverMessage = String();
-int bytesSerialConsole = 0;
+bool userPromptSubmitted = false;
 
 
 void setup() 
@@ -115,36 +115,33 @@ void loop() {
         {
             if (client.available()) 
             {
-              
-                if (bytesSerialConsole == 0) 
+                if (userPromptSubmitted == false)
                 {
                     Serial.println("Please submit 's' to console in order to write new emg values.");
-                    bytesSerialConsole = 1;
+                    Serial.println(Serial.available());
+                    userPromptSubmitted = true;
                 }
-                Serial.println(Serial.available());
-                while(Serial.available() != 0)    // Check if there is any user input.
+                while (Serial.available() == 0) 
                 {
-                      //Serial.println("readyUserInput is currently");
-                      //Serial.println(readyUserInput);
-                      // Put function here you want to repeat after user input.
-                      char c = client.read();
-                      if (c == '\t')
-                      {
-                          // Once newline is found in message from client, restart message.
-                          Serial.println(serverMessage);
-                          serverMessage = String();
-                          
-                          Serial.println("Restart user input!");
-                          // Reset while loop. Require new user input to run function again.
-                          bytesSerialConsole = 0;
-                          Serial.readString();
-                          break;
-                      }
-                      else
-                      {
-                          // Append each chracter to string. This is the same as Serial.readString();
-                          serverMessage = serverMessage + String(c);
-                      }
+                    // Wait for User to Input data.
+                }
+                // User has entered input.
+                // Read client messages by each char.
+                char c = client.read();
+                if (c == '\t')
+                {
+                    // Once newline is found in message from client, restart message.
+                    Serial.println(serverMessage);
+                    serverMessage = String();
+                    // Reset while loop. Require new user input to run function again in serial console.
+                    Serial.readString();
+                    userPromptSubmitted = false;
+                    //break;
+                }
+                else
+                {
+                    // Append each chracter to string. This is the same as Serial.readString();
+                    serverMessage = serverMessage + String(c);
                 }
 
                 /*
