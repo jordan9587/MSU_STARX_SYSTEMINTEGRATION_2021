@@ -127,6 +127,8 @@ void httpRequest()
               // Remove last ", " from clientMessage.
               clientMessage.remove(clientMessage.length() - 1);
               clientMessage.remove(clientMessage.length() - 1);
+              client.print(String("Debug: ") + clientMessage);
+              client.println();
               // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
@@ -185,7 +187,6 @@ void emgFeatureExtraction()
   double MMAV = toolbox.MMAV();
   double MMAV2 = toolbox.MMAV2();
   double MYOP = toolbox.MYOP();
-  double FZC = toolbox.FZC();
   double RMS = toolbox.RMS();
   double SSI = toolbox.SSI();
   double SKEW = toolbox.SKEW();
@@ -197,7 +198,6 @@ void emgFeatureExtraction()
   double VO = toolbox.VO();
   double WL = toolbox.WL();
   double WA = toolbox.WA();
-  double ZC = toolbox.ZC();
     
   // Add each metric to array of emg features.
   double emgFeatures[] = {ASM, ASS, AAC, ME,
@@ -205,9 +205,9 @@ void emgFeatureExtraction()
                           EWL, IEMG, KURT, LCOV,
                           LD, LDAMV, LDASDV, LTKEO, MFL,
                           MAD, MAV, MSR, MMAV, MMAV2,
-                          MYOP, FZC, RMS, SSI, SKEW,
+                          MYOP, RMS, SSI, SKEW,
                           SSC, SD, TM, VAR, VAREMG,
-                          VO, WL, WA, ZC};
+                          VO, WL, WA};
   // Format message as comma seperated.
   for (int a=0; a < (sizeof emgFeatures/sizeof emgFeatures[0]); a++)
   {
