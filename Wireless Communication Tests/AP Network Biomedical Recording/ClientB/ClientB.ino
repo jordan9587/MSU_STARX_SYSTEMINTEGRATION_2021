@@ -115,8 +115,7 @@ void httpRequest()
   if (client.connect(server, 80))
   {
       // Reset message being sent to host.
-      String idEmg = "A: ";
-      String clientMessage = String() + idEmg;
+      clientMessage = String() + idEmg;
       for (int pointerEmg = 0; pointerEmg <= maxMatrixSize; pointerEmg++)
       {
           // Prepare to send clientMessage to host.
@@ -126,8 +125,6 @@ void httpRequest()
               // Remove last ", " from clientMessage.
               clientMessage.remove(clientMessage.length() - 1);
               clientMessage.remove(clientMessage.length() - 1);
-              // Add end of line to message for server to determine when to print.
-              clientMessage = clientMessage;
               // Send clientMessage to host.
               client.print(clientMessage);
               client.println();
@@ -159,7 +156,7 @@ void emgFeatureExtraction()
 {
     
   // Reset message being sent to host.
-  String clientMessage2 = String() + idEmg;
+  clientMessage = String() + idEmg;
   emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
   // Since we can't initalise function in array define metrics here.
   double ASM = toolbox.ASM();
@@ -215,22 +212,22 @@ void emgFeatureExtraction()
       double val = emgFeatures[a];
       String SerialData = "";
       SerialData = String(val,5);
-      clientMessage2 = clientMessage2 + SerialData + String(", ");
+      clientMessage = clientMessage + SerialData + String(", ");
   }
     
   // Remove last ", " from clientMessage.
-  clientMessage2.remove(clientMessage2.length() - 1);
-  clientMessage2.remove(clientMessage2.length() - 1);
+  clientMessage.remove(clientMessage.length() - 1);
+  clientMessage.remove(clientMessage.length() - 1);
 
   // Add end of line to message for server to determine when to print.
-  clientMessage2 = clientMessage2 + String("\n") + String("\t");
+  clientMessage = clientMessage + String("\n") + String("\t");
          
   // Check the Serial output is correct for client.
-  Serial.print("Finished Metric Message: " + clientMessage2);
+  Serial.print("Finished Metric Message: " + clientMessage);
   Serial.print("\n");
     
   // Send clientMessage to host.
-  client.print(clientMessage2);
+  client.print(clientMessage);
   client.println();
 }
 
