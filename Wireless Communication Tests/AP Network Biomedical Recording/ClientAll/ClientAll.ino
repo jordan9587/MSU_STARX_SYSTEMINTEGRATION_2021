@@ -38,8 +38,8 @@ const unsigned long postingInterval = 5L;  // Delay between updates, in millisec
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 220;
-double emgArray[220];
+int maxMatrixSize = 220 * 3;
+double emgArray[660];
 
 // Message being sent to host.
 String idEmg = "A: ";
@@ -122,7 +122,7 @@ void httpRequest()
           int sensorValue0 = analogRead(A0);
           int sensorValue1 = analogRead(A1);
           int sensorValue2 = analogRead(A2);
-          if (pointerEmg == maxMatrixSize)
+          if (pointerEmg == maxMatrixSize + 2)
           {
               // Remove last ", " from clientMessage.
               clientMessage.remove(clientMessage.length() - 1);
@@ -130,7 +130,7 @@ void httpRequest()
               // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
-              // emgFeatureExtraction();
+              emgFeatureExtraction();
               // Add final delimiter that will be split in server message.
               clientMessage = clientMessage + String("\t");
               // Send clientMessage to host.
@@ -139,9 +139,9 @@ void httpRequest()
               break;
      
           }
-          //emgArray[pointerEmg] = sensorValue0;
-          //emgArray[pointerEmg+1] = sensorValue1;
-          //emgArray[pointerEmg+2] = sensorValue2;
+          emgArray[pointerEmg] = sensorValue0;
+          emgArray[pointerEmg+1] = sensorValue1;
+          emgArray[pointerEmg+2] = sensorValue2;
           clientMessage = clientMessage + sensorValue0 + ", " + sensorValue1 + ", " + sensorValue2 + ", ";
       }
      
@@ -159,7 +159,7 @@ void httpRequest()
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
-  emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
+  emgToolbox toolbox(emgArray, maxMatrixSize+2, 0.01);
   // Since we can't initalise function in array define metrics here.
   double ASM = toolbox.ASM();
   double ASS = toolbox.ASS();
