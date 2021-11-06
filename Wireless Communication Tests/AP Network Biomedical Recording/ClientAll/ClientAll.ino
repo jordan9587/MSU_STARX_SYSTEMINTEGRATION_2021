@@ -38,8 +38,8 @@ const unsigned long postingInterval = 5L;  // Delay between updates, in millisec
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 220;
-double emgArray[220];
+int maxMatrixSize = 220 * 3;
+double emgArray[660];
 
 // Message being sent to host.
 String idEmg = "A: ";
@@ -134,7 +134,7 @@ void httpRequest()
               // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
-              //emgFeatureExtraction();
+              // emgFeatureExtraction();
               // Send clientMessage to host.
               client.print(clientMessage);
               client.println();
@@ -142,6 +142,8 @@ void httpRequest()
      
           }
           emgArray[pointerEmg] = sensorValue0;
+          emgArray[pointerEmg+1] = sensorValue1;
+          emgArray[pointerEmg+2] = sensorValue2;
           clientMessage = clientMessage + sensorValue0 + ", " + sensorValue1 + ", " + sensorValue2 + ", ";
       }
      
