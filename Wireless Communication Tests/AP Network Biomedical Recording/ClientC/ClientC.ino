@@ -120,6 +120,8 @@ void httpRequest()
       {
           // Prepare to send clientMessage to host.
           int sensorValue0 = analogRead(A0);
+          // Map values between from 0-1000 to -1000 to 1000.
+          sensorValue0 = map(sensorValue0, 0, 1000, -1000, 1000);
           if (pointerEmg == maxMatrixSize)
           {
               // Remove last ", " from clientMessage.
