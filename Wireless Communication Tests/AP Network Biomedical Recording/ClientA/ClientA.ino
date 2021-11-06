@@ -125,14 +125,14 @@ void httpRequest()
               // Remove last ", " from clientMessage.
               clientMessage.remove(clientMessage.length() - 1);
               clientMessage.remove(clientMessage.length() - 1);
-              // Send clientMessage to host.
-              client.print(clientMessage);
-              client.println();
               // Check the Serial output is correct for client.
               // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
               emgFeatureExtraction();
+              // Send clientMessage to host.
+              client.print(clientMessage);
+              client.println();
               break;
      
           }
@@ -225,10 +225,6 @@ void emgFeatureExtraction()
   // Check the Serial output is correct for client.
   Serial.print("Finished Metric Message: " + clientMessage);
   Serial.print("\n");
-    
-  // Send clientMessage to host.
-  client.print(clientMessage);
-  client.println();
 }
 
 void printWifiStatus()
