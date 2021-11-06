@@ -28,7 +28,7 @@ WiFiClient client;
 
 // Server address:
 //char server[] = "http://192.168.4.1/";
-byte server[] = {192, 168, 4, 3};
+byte server[] = {192, 168, 4, 1};
 //IPAddress server(192,168,0,1);
 
 unsigned long lastConnectionTime = 0;   // Last time you connected to the server, in milliseconds
