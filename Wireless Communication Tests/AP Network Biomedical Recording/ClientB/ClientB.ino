@@ -128,7 +128,6 @@ void httpRequest()
               clientMessage.remove(clientMessage.length() - 1);
               clientMessage.remove(clientMessage.length() - 1);
               // Check the Serial output is correct for client.
-              // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
               emgFeatureExtraction();
