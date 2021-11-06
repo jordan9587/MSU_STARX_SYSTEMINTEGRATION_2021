@@ -122,7 +122,7 @@ void httpRequest()
           int sensorValue0 = analogRead(A0);
           int sensorValue1 = analogRead(A1);
           int sensorValue2 = analogRead(A2);
-          if (pointerEmg == maxMatrixSize + 2)
+          if (pointerEmg == maxMatrixSize)
           {
               // Remove last ", " from clientMessage.
               clientMessage.remove(clientMessage.length() - 1);
@@ -159,7 +159,7 @@ void httpRequest()
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
-  emgToolbox toolbox(emgArray, maxMatrixSize+2, 0.01);
+  emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
   // Since we can't initalise function in array define metrics here.
   double ASM = toolbox.ASM();
   double ASS = toolbox.ASS();
