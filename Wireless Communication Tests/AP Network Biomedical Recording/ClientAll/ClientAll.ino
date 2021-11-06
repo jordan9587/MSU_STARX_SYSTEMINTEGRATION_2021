@@ -38,8 +38,8 @@ const unsigned long postingInterval = 5L;  // Delay between updates, in millisec
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 220 * 3;
-double emgArray[660];
+int maxMatrixSize = 220;
+double emgArray[220];
 
 // Message being sent to host.
 String idEmg = "A: ";
@@ -119,13 +119,9 @@ void httpRequest()
       for (int pointerEmg = 0; pointerEmg <= maxMatrixSize; pointerEmg++)
       {
           // Prepare to send clientMessage to host.
-          unsigned int sensorValue0 = analogRead(A0);
-          unsigned int sensorValue1 = analogRead(A1);
-          unsigned int sensorValue2 = analogRead(A2);
-          // Map values between from 0-1000 to -1000 to 1000.
-          sensorValue0 = map(sensorValue0, 0, 1000, -1000, 1000);
-          sensorValue1 = map(sensorValue1, 0, 1000, -1000, 1000);
-          sensorValue2 = map(sensorValue2, 0, 1000, -1000, 1000);
+          int sensorValue0 = analogRead(A0);
+          int sensorValue1 = analogRead(A1);
+          int sensorValue2 = analogRead(A2);
           if (pointerEmg == maxMatrixSize)
           {
               // Remove last ", " from clientMessage.
@@ -135,15 +131,17 @@ void httpRequest()
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
               // emgFeatureExtraction();
+              // Add final delimiter that will be split in server message.
+              clientMessage = clientMessage + String("\t");
               // Send clientMessage to host.
               client.print(clientMessage);
               client.println();
               break;
      
           }
-          emgArray[pointerEmg] = sensorValue0;
-          emgArray[pointerEmg+1] = sensorValue1;
-          emgArray[pointerEmg+2] = sensorValue2;
+          //emgArray[pointerEmg] = sensorValue0;
+          //emgArray[pointerEmg+1] = sensorValue1;
+          //emgArray[pointerEmg+2] = sensorValue2;
           clientMessage = clientMessage + sensorValue0 + ", " + sensorValue1 + ", " + sensorValue2 + ", ";
       }
      
@@ -224,7 +222,7 @@ void emgFeatureExtraction()
   clientMessage.remove(clientMessage.length() - 1);
 
   // Add end of line to message for server to determine when to print.
-  clientMessage = clientMessage + String("\n") + String("\t");
+  clientMessage = clientMessage + String("\n");
          
   // Check the Serial output is correct for client.
   Serial.print("Finished Metric Message: " + clientMessage);
