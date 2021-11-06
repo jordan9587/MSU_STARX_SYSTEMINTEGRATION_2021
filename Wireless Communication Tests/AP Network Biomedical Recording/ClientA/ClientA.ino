@@ -154,9 +154,6 @@ void httpRequest()
 // Prints all feature extraction results for emg array.
 void emgFeatureExtraction()
 {
-    
-  // Reset message being sent to host.
-  clientMessage = String() + idEmg;
   emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
   // Since we can't initalise function in array define metrics here.
   double ASM = toolbox.ASM();
