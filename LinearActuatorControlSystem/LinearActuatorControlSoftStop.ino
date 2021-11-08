@@ -9,8 +9,6 @@ byte IN1 = 26;
 byte IN2 = 27;
 byte ANV = A0;
 
-
-
 void setup() 
 {
   Serial.begin(9600);
