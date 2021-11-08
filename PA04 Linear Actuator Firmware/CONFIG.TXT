@@ -26,10 +26,10 @@ baud = 115200
 # 2 = proportional mode
 # 3 = incremental mode
 # 4 = pre-set position mode
-opMode = 2
+opMode = 1
 
 # Error Mode (Actuator Hardware Protection Feature)
-errMode = 0
+errMode = 1
 
 # Toggle mode configuration (tmCFG)
 # 0 = speed and torque set in config file
@@ -69,7 +69,7 @@ maxTorq = 10000
 mtMin = 8000
 
 # Max speed in trajectory commands, toggle, or preset position mode
-maxSpeed = 2000000
+maxSpeed = 3000000
 
 # Min value for speed in toggle mode with analog speed control
 msMin = 200000
@@ -81,7 +81,7 @@ accel = 5000
 # 0 = snap to position
 # 1 = decelerate at accel
 # 2 = brake for 100 ms, then snap to position
-stopMode = 0
+stopMode = 1
 
 # 1-2ms pulse input range (units = 1/60,000 ms):
 pMin = 66000
@@ -129,7 +129,7 @@ Pos4 = 9216
 # DIO1 Config
 ioPin1 = 4
 ioBit1 = 0
-ioPWM1 = 3
+ioPWM1 = 0
 
 # DIO2 Config
 ioPin2 = 0

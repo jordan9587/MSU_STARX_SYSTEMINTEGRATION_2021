@@ -1,193 +1,99 @@
-#include "svmPrototype.h"
-#include <PID_v1.h>
-#define NUM_SAMPLES 90
-#define NUM_AXES 3
-#define INTERVAL 20 // Originally 90
-#define THRESHOLD 250 // NEW
-// To reduce spikes in reading we set a sensible value to truncate too large EMG voltage values.
-#define TRUNCATE 1000 // NEW
-//set the PID pins for Knee and Hip actuators
-#define PIN_INH 0
-#define PIN_OUTH 1
-#define PIN_INK 2
-#define PIN_OUTK 3
-#define KP 1200
-#define KI 25000
-#define KD 10000
-float baseline[NUM_AXES];  // NEW
-float features[NUM_SAMPLES * NUM_AXES];
-int emg0 = A0;
-int emg1 = A1;
-int emg2 = A2;
-//PID object variables
-int currentStateMovement = 0;
-double SetpointH, InputH, OutputH, SetpointK, InputK, OutputK;
-//Movement label values for Hip angle, Knee angle, Hip Setpoint, Knee Setpoint respectively
-float Standing[] = { 0, 0, 18.25, 21.21 };      //1
-float HeelStrike[] = { 20, 0, 16.22, 21.21 };   //2
-float LdgResp[] = { 20, 20, 19.13, 20.160 };    //3
-float MidStance[] = { 0, 5, 18.25, 20.98 };     //4
-float TmlStance[] = { -20, 0, 17.21, 21.21 };   //5
-float PreSwing[] = { -10, 40, 17.74, 18.85 };   //6
-float InitSwing[] = { 15, 60, 18.93, 17.39 };   //7
-float MidSwing[] = { 25, 25, 19.31, 19.86 };    //8
-float TmlSwing[] = { 20, 0, 19.13, 21.21 };     //9
-int arSize = sizeof(Standing) / sizeof(Standing[0]);
-Eloquent::ML::Port::SVM clf;
-PID Hpid(&InputH, &OutputH, &SetpointH, HipP, HipI, HipD, DIRECT);
-PID Kpid(&InputK, &OutputK, &SetpointK, KneeP, KneeI, KneeD, DIRECT);
-void readEMG(float &v0, float &v1,float &v2) {
-  // Read each emg sensor and convert to voltage (0-5V)
-  // Should be recorded as analogread * (5.0 / 1023.0) in final version.
-  v0 = analogRead(emg0);
-  v1 = analogRead(emg1);
-  v2 = analogRead(emg2);
-}
+#include "linearActuatorControl.h"
 
-void setup() {
-  // put your setup code here, to run once:
-  Serial.begin(9600);
-  calibrate();
-  SetpointH = Standing[2];
-  Hpid.SetOutputLimits(0,255);
-  Kpid.SetOutputLimits(0,255);
-  Hpid.SetTunings(KP, KI, KD);
-  Kpid.SetTunings(KD, KI, KD);
-}
+// Array of Movement label values:
+// Array indexing: {Hip setpoint, Hip velocity}
+float mPreswing[] = {213.0335049, 23.17901726};      // Terminal_Stance_to_Pre_Swing
+float mToeOff[] = {205.4560785, 77.04381417};      // Pre_Swing_to_Toe_Off
+float mTerminalSwing[] = {158.644927, 101.3723864};      // Toe_Off_to_Terminal_Swing
+float mHealStrike[] = {139.2596156, 34.37931672};      // Terminal_Swing_to_Heal_Strike
+float mLoadingResponse[] = {172.402608, 38.20719649};      // Heal_Strike_to_Loading_Response
+float mMidStance[] = {197.4034404, 22.16240141};      // Loading_Response_to_Mid_Stance
+float mTerminalStance[] = {209.5427921, 18.92111077};  // Mid_Stance_to_Terminal_Stance
 
-void loop() {
-  float v0, v1, v2;
-  // put your main code here, to run repeatedly:
-  if (motionDetected(v0, v1, v2) == true) {
-    // Read EMG sensors
-    readEMG(v0, v1, v2);
-  
-    // Condition/ make any normalisation to the emg sensor input.
-    // Calibration procedure to remove this fixed offset from the readings. All EMG Voltage lines will oscillate from 0.
-    v0 = constrain(v0 - baseline[0], -TRUNCATE, TRUNCATE);
-    v1 = constrain(v1 - baseline[1], -TRUNCATE, TRUNCATE);
-    v2 = constrain(v2 - baseline[2], -TRUNCATE, TRUNCATE);
-  
-    // Record emg data into svm format [v0, v1, v2, v0, v1, v2, ... , NUM_SAMPLESth v3]
-    recordEMG();
-    // Use SVM to classify emg dataset
-    svmClassify();
-    FSM(currentStateMovement);
-  }
-  else {
-    // No movement detected, return 0 as voltage.
-    v0 = 0;
-    v1 = 0;
-    v2 = 0;
-  }
-
-}
-
-//NEW
-// "Zero" the readings by setting baseline startup noise
-void calibrate() {
-    float v0, v1, v2;
-
-    for (int i = 0; i < 10; i++) {
-        readEMG(v0, v1, v2);
-        delay(10);
-    }
-
-    baseline[0] = v0;
-    baseline[1] = v1;
-    baseline[2] = v2;
-}
-
-// NEW
-bool motionDetected(float v0, float v1, float v2) 
-{
-  return (abs(v0) + abs(v1) + abs(v2)) > THRESHOLD;
-}
-
-void recordEMG() {
-    // Record emg data into svm format [v0, v1, v2, v0, v1, v2, ... , NUM_SAMPLESth v3]
-    float v0, v1, v2;
-    for (int i = 0; i < NUM_SAMPLES; i++) 
-    {
-        readEMG(v0, v1, v2);
-        // Calibration procedure to remove this fixed offset from the readings. All EMG Voltage lines will oscillate from 0.
-        v0 = constrain(v0 - baseline[0], -TRUNCATE, TRUNCATE);
-        v1 = constrain(v1 - baseline[1], -TRUNCATE, TRUNCATE);
-        v2 = constrain(v2 - baseline[2], -TRUNCATE, TRUNCATE);
-        
-        features[i * NUM_AXES + 0] = v0;
-        features[i * NUM_AXES + 1] = v1;
-        features[i * NUM_AXES + 2] = v2;
-        delay(INTERVAL);
-    }
-}
-void svmClassify() {
-    // Use SVM to predict label for given emg input array.
-    Serial.print("Detected gesture: ");
-    currentStateMovement = clf.predictLabel(features);
+// Construct a linearActuator object for Hip. (Hip Actuator)
+// Parameters set at: anvpin, in1, in2, iopin
+linearActuatorControl hip(7, 3, 4, 5);
     
-    Serial.println(currentState);
-}
-void FSM(int currentStateMovement)
+/*
+* Setup code that runs once before loop execution function.
+*/
+void setup() 
 {
-  InputH = analogRead(PIN_INH);
-  InputK = analogRead(PIN_INK);
-  switch (index)
-  {
-    case 0:           //Standing
-      SetpointH = Standing[2];
-      SetpointK = Standing[3];
-      PIDCompute();
-      //get EMG data and find movement label and change the value of Movement acordingly in order to go to next state
-      break;
-    case 1:
-      SetpointH = HeelStrike[2];
-      SetpointK = HeelStrike[3];
-      PIDCompute();
-      break;
-    case 2:           //LdgResp
-      SetpointH = LdgResp[2];
-      SetpointK = LdgResp[3];
-      PIDCompute();
-      break;
-    case 3:           //MidStance
-      SetpointH = MidStance[2];
-      SetpointK = MidStance[3];
-      PIDCompute();
-      break;
-    case 4:           //TmlStance
-      SetpointH = TmlStance[2];
-      SetpointK = TmlStance[3];
-      PIDCompute();
-      break;
-    case 5:           //PreSwing
-      SetpointH = PreSwing[2];
-      SetpointK = PreSwing[3];
-      PIDCompute();
-      break;
-    case 6:           //InitSwing
-      SetpointH = InitSwing[2];
-      SetpointK = InitSwing[3];
-      PIDCompute();
-      break;
-    case 7:           //MidSwing
-      SetpointH = MidSwing[2];
-      SetpointK = MidSwing[3];
-      PIDCompute();
-      break;
-    case 8:           //TmlSwing
-      SetpointH = TmlSwing[2];
-      SetpointK = TmlSwing[3];
-      PIDCompute();
-      break;
-     default:
-      PIDCompute();
+
+}
+
+/*
+* Loop code that runs repeatedly on every tick of the microprocessor clock cycle.
+*/
+void loop()
+{
+    Serial.println("Choose number between 0-6 (Pre-swing to Terminal Stance) to set linear actuator to?");     // Prompt user for input.
+    while (Serial.available() == 0) 
+    {
+        // Wait for User to Input Data
     }
+    int svmLabel = Serial.parseInt(); // Read the data the user has input
+    finiteStateMachine(svmLabel, hip);
 }
-void PIDCompute()
+
+/*
+* Linear Actuator Function - Finite State Machine that changes position and speed of linear actuator depending on SVM label.
+* /param svmLabel Int between 0-8 that indicates phase in walking gait cycle.
+* /param knee linearActuatorControl object that represents knee linear actuator.
+* /param hip linearActuatorControl object that represents hip linear actuator.
+*/
+void finiteStateMachine(int svmLabel, linearActuatorControl hip)
 {
-    Hpid.Compute();
-    Kpid.Compute();
-    analogWrite(PIN_OUTH, OutputH);
-    analogWrite(PIN_OUTK, OutputK);
+    switch (svmLabel)
+    {
+        case 0:     // Terminal_Stance_to_Pre_Swing
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mPreswing[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mPreswing[0]);
+            hip.updateSetpoint();
+            break;
+        case 1:     // Pre_Swing_to_Toe_Off
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mToeOff[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mToeOff[0]);
+            hip.updateSetpoint();
+            break;
+        case 2:     // Toe_Off_to_Terminal_Swing
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mTerminalSwing[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mTerminalSwing[0]);
+            hip.updateSetpoint();
+            break;
+        case 3:     // Terminal_Swing_to_Heal_Strike
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mHealStrike[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mHealStrike[0]);
+            hip.updateSetpoint();
+            break;
+        case 4:     // Heal_Strike_to_Loading_Response
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mLoadingResponse[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mLoadingResponse[0]);
+            hip.updateSetpoint();
+            break;
+        case 5:     // Loading_Response_to_Mid_Stance
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mMidStance[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mMidStance[0]);
+            hip.updateSetpoint();
+            break;
+        case 6:     // Mid_Stance_to_Terminal_Stance
+            // Hip linear actuator speed and setpoint set.
+            hip.setVelocity(mTerminalStance[1]);
+            hip.updateVelocity();
+            hip.setSetpoint(mTerminalStance[0]);
+            hip.updateSetpoint();
+            break;
+    }
 }
