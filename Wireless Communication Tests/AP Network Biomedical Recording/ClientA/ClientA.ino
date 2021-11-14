@@ -10,9 +10,7 @@
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <ArduinoLowPower.h>
-#include <RTCZero.h>
 
-#include "emgToolbox.h"
 //#include "login_credentials.h"
 
 /* Please enter your sensitive data in the Secret tab/login_credentials.h */
@@ -23,7 +21,7 @@ int keyIndex = 0;         // Your network key index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
 
-// Initialize the WiFi client library
+// Initialise the WiFi client library
 WiFiClient client;
 
 // Server address:
@@ -38,12 +36,15 @@ const unsigned long postingInterval = 5L;  // Delay between updates, in millisec
 char c;
 
 // Buffer of EMG array
-int maxMatrixSize = 220;
-double emgArray[220];
+int maxMatrixSize = 90;
 
 // Message being sent to host.
 String idEmg = "A: ";
 String clientMessage = String() + idEmg;
+
+// Second to send the clientMessage on:
+unsigned long secondWait = 3;
+unsigned long realTimeClock = 0;
 
 
 void setup()
@@ -105,6 +106,34 @@ void loop()
 
 }
 
+/*
+Updates Real Time Clock (RTC) of Arduino MKR1010 Wifi.
+@return epoch Integer of the time in seconds since January 1st, 1970 on success. 0 on failure.
+*/
+int updateRTC()
+{
+    unsigned long epoch;
+    int numberOfTries = 0, maxTries = 6;
+    do 
+    {
+        epoch = WiFi.getTime();
+        numberOfTries++;
+    }
+    while ((epoch == 0) && (numberOfTries < maxTries));
+    if (numberOfTries == maxTries) 
+    {
+        Serial.print("NTP unreachable!!");
+        while (true);
+    }
+    else 
+    {
+        Serial.print("Epoch received: ");
+        Serial.println(epoch);
+        Serial.println();
+        return epoch;
+    }
+}
+
 // This method makes a HTTP connection to the server:
 void httpRequest()
 {
@@ -120,8 +149,6 @@ void httpRequest()
       {
           // Prepare to send clientMessage to host.
           int sensorValue0 = analogRead(A0);
-          // Map values between from 0-1000 to -1000 to 1000.
-          sensorValue0 = map(sensorValue0, 0, 1000, -1000, 1000);
           if (pointerEmg == maxMatrixSize)
           {
               // Remove last ", " from clientMessage.
@@ -130,17 +157,19 @@ void httpRequest()
               // Check the Serial output is correct for client.
               Serial.print("Finished Raw EMG Message: " + clientMessage);
               Serial.print("\n");
-              emgFeatureExtraction();
+              // Wait until we reach a secondWait th second before sending message.
+              do
+              {
+                realTimeClock = updateRTC();
+              }
+              while (realTimeClock % secondWait != 0);
               // Send clientMessage to host.
               client.print(clientMessage);
               client.println();
               break;
-     
           }
-          emgArray[pointerEmg] = sensorValue0;
           clientMessage = clientMessage + sensorValue0 + ", ";
       }
-     
       // Note the time that the connection was made:
       lastConnectionTime = millis();
   }
@@ -151,79 +180,6 @@ void httpRequest()
   }
 }
 
-
-// Prints all feature extraction results for emg array.
-void emgFeatureExtraction()
-{
-  emgToolbox toolbox(emgArray, maxMatrixSize+1, 0.01);
-  // Since we can't initalise function in array define metrics here.
-  double ASM = toolbox.ASM();
-  double ASS = toolbox.ASS();
-  double AAC = toolbox.AAC();
-  double ME = toolbox.ME();
-  double COV = toolbox.COV();
-  double DAMV = toolbox.DAMV();
-  double DASDV = toolbox.DASDV();
-  double DVARV = toolbox.DVARV();
-  double EMAV = toolbox.EMAV();
-  double EWL = toolbox.EWL();
-  double IEMG = toolbox.IEMG();
-  double KURT = toolbox.KURT();
-  double LCOV = toolbox.LCOV();
-  double LD = toolbox.LD();
-  double LDAMV = toolbox.LDAMV();
-  double LDASDV = toolbox.LDASDV();
-  double LTKEO = toolbox.LTKEO();
-  double MFL = toolbox.MFL();
-  double MAD = toolbox.MAD();
-  double MAV = toolbox.MAV();
-  double MSR = toolbox.MSR();
-  double MMAV = toolbox.MMAV();
-  double MMAV2 = toolbox.MMAV2();
-  double MYOP = toolbox.MYOP();
-  double FZC = toolbox.FZC();
-  double RMS = toolbox.RMS();
-  double SSI = toolbox.SSI();
-  double SKEW = toolbox.SKEW();
-  double SSC = toolbox.SSC();
-  double SD = toolbox.SD();
-  double TM = toolbox.TM();
-  double VAR = toolbox.VAR();
-  double VAREMG = toolbox.VAREMG();
-  double VO = toolbox.VO();
-  double WL = toolbox.WL();
-  double WA = toolbox.WA();
-  double ZC = toolbox.ZC();
-    
-  // Add each metric to array of emg features.
-  double emgFeatures[] = {ASM, ASS, AAC, ME,
-                          COV, DAMV, DASDV, DVARV, EMAV,
-                          EWL, IEMG, KURT, LCOV,
-                          LD, LDAMV, LDASDV, LTKEO, MFL,
-                          MAD, MAV, MSR, MMAV, MMAV2,
-                          MYOP, FZC, RMS, SSI, SKEW,
-                          SSC, SD, TM, VAR, VAREMG,
-                          VO, WL, WA, ZC};
-  // Format message as comma seperated.
-  for (int a=0; a < (sizeof emgFeatures/sizeof emgFeatures[0]); a++)
-  {
-      double val = emgFeatures[a];
-      String SerialData = "";
-      SerialData = String(val,5);
-      clientMessage = clientMessage + SerialData + String(", ");
-  }
-    
-  // Remove last ", " from clientMessage.
-  clientMessage.remove(clientMessage.length() - 1);
-  clientMessage.remove(clientMessage.length() - 1);
-
-  // Add end of line to message for server to determine when to print.
-  clientMessage = clientMessage + String("\n") + String("\t");
-         
-  // Check the Serial output is correct for client.
-  Serial.print("Finished Metric Message: " + clientMessage);
-  Serial.print("\n");
-}
 
 void printWifiStatus()
 {
