@@ -113,15 +113,16 @@ void serialEvent()
         digitalWrite(IN2,LOW);
         analogWrite(ANV, abs(values[0]));
       }
-      delay(250);
       if(values[0] < 0)
       {
         Serial.print("Position Start: "); Serial.println(PWMP); 
-        digitalWrite(IN1,HIGH);
-        digitalWrite(IN2,LOW);
+        digitalWrite(IN1,LOW);
+        digitalWrite(IN2,HIGH);
         analogWrite(ANV, abs(values[0]));
       }
+      delay(250);
       Serial.print("Speed: "); Serial.println(PWMS); 
+      delay(250);
       digitalWrite(IN1,LOW);
       digitalWrite(IN2,LOW);
       analogWrite(ANV, 0);
