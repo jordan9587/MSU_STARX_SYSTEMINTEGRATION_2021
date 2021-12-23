@@ -28,7 +28,7 @@ void setup()
   analogWrite(ANV, 0);
   digitalWrite(IN1,LOW);
   digitalWrite(IN2,LOW);
-  ISR_Enable(false,true);
+  ISR_Enable(true,true);
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
   {
     sign[i] = 1;
@@ -106,17 +106,26 @@ void serialEvent()
         sign[i] = 1;
       }
       fieldIndex = 0;
-      Serial.println(PWMP);
-      
-      digitalWrite(IN1,HIGH);
-      digitalWrite(IN2,LOW);
-      analogWrite(ANV, 255);
-      delay(500);
-      Serial.println(PWMP);
-      
+      if(values[0] > 0)
+      {
+        Serial.print("Position Start: "); Serial.println(PWMP); 
+        digitalWrite(IN1,HIGH);
+        digitalWrite(IN2,LOW);
+        analogWrite(ANV, abs(values[0]));
+      }
+      delay(250);
+      if(values[0] < 0)
+      {
+        Serial.print("Position Start: "); Serial.println(PWMP); 
+        digitalWrite(IN1,HIGH);
+        digitalWrite(IN2,LOW);
+        analogWrite(ANV, abs(values[0]));
+      }
+      Serial.print("Speed: "); Serial.println(PWMS); 
       digitalWrite(IN1,LOW);
       digitalWrite(IN2,LOW);
       analogWrite(ANV, 0);
+      Serial.print("Position Start: "); Serial.println(PWMP);
     } 
   }
 }
