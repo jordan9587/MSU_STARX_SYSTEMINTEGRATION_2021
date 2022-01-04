@@ -3,7 +3,8 @@ volatile unsigned long timer[4]; //timer that holds the rising and falling edge 
 volatile double PWMS;
 volatile double PWMP; //holds Duty cycle value
 volatile long DutyS, DutyP;
-double error;
+
+
 //pinout constants
 const byte ANV = 2;
 const byte DIOS = 24;
@@ -11,24 +12,33 @@ const byte DIOP = 25;
 const byte IN1 = 26;
 const byte IN2 = 27;
 
-const int NUMBER_OF_FIELDS = 1; // how many comma separated fields we expect
-int fieldIndex = 0;            // the current field being received
+const int NUMBER_OF_FIELDS = 1;   // how many comma separated fields we expect
+int fieldIndex = 0;               // the current field being received
 double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-double values[NUMBER_OF_FIELDS];
+double values[NUMBER_OF_FIELDS];  // array holding each final value of the serial monitor inputs
 int sign[NUMBER_OF_FIELDS];
+
+int singleLoop = true;
 void setup() 
 {
-  // put your setup code here, to run once:
+  // Serial and pin mode setup
   Serial.begin(9600);
   pinMode(DIOS, INPUT);
   pinMode(DIOP, INPUT);
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
   pinMode(ANV,OUTPUT);
-  analogWrite(ANV, 0);
+  //
   digitalWrite(IN1,LOW);
+  digitalWrite(IN2,HIGH);
+  analogWrite(ANV,50);
+  delay(500);
+  digitalWrite(IN1,HIGH);
   digitalWrite(IN2,LOW);
-  ISR_Enable(true,true);
+  analogWrite(ANV,50);
+  delay(500);
+  
+  ISR_Enable(false,true);
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
   {
     sign[i] = 1;
@@ -39,6 +49,23 @@ void loop()
 {
   // put your main code here, to run repeatedly:
   //Serial.println(PWMS);
+  while(singleLoop)
+  {
+      // To begin testing make sure the serial monitor commands are working
+      // 1. make sure the linear actuator is at min lenght
+      // 2. Try the following serial monitor commands: 50 then -50
+      Serial.print("Position Start: "); Serial.println(PWMP);
+      Mdirection(values[0]);
+      analogWrite(ANV, abs(values[0]));
+      delay(250);
+      Serial.print("Speed: "); Serial.println(PWMS); 
+      delay(250);
+      digitalWrite(IN1,LOW);
+      digitalWrite(IN2,LOW);
+      analogWrite(ANV, 0);
+      Serial.print("Position End: "); Serial.println(PWMP);
+  }
+  
 }
 void ISR1() 
 {
@@ -105,28 +132,27 @@ void serialEvent()
         dummy[i] = 0;
         sign[i] = 1;
       }
-      fieldIndex = 0;
-      if(values[0] > 0)
-      {
-        Serial.print("Position Start: "); Serial.println(PWMP); 
-        digitalWrite(IN1,HIGH);
-        digitalWrite(IN2,LOW);
-        analogWrite(ANV, abs(values[0]));
-      }
-      if(values[0] < 0)
-      {
-        Serial.print("Position Start: "); Serial.println(PWMP); 
-        digitalWrite(IN1,LOW);
-        digitalWrite(IN2,HIGH);
-        analogWrite(ANV, abs(values[0]));
-      }
-      delay(250);
-      Serial.print("Speed: "); Serial.println(PWMS); 
-      delay(250);
-      digitalWrite(IN1,LOW);
-      digitalWrite(IN2,LOW);
-      analogWrite(ANV, 0);
-      Serial.print("Position Start: "); Serial.println(PWMP);
+      fieldIndex = 0;      
     } 
+  }
+}
+void Mdirection(double dir)
+{
+  if(dir < 0)
+  {
+    //extend
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
+  }
+  if(dir > 0)
+  {
+    //retract
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
+  }
+  else
+  {
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, LOW);
   }
 }
