@@ -57,9 +57,7 @@ void loop()
       Serial.print("Position Start: "); Serial.println(PWMP);
       Mdirection(values[0]);
       analogWrite(ANV, abs(values[0]));
-      delay(250);
-      Serial.print("Speed: "); Serial.println(PWMS); 
-      delay(250);
+      delay(500);
       digitalWrite(IN1,LOW);
       digitalWrite(IN2,LOW);
       analogWrite(ANV, 0);
