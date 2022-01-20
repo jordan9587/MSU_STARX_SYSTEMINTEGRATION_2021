@@ -1,88 +1,54 @@
 #include <LiquidCrystal.h>
 
 /*
-  HC-SR04 with Temp and Humidity Demonstration
-  HC-SR04-Temp-Humid-Demo.ino
-  Demonstrates enhancements of HC-SR04 Ultrasonic Range Finder
-  With DHT22 Temperature and Humidity Sensor
+  HC-SR04 NewPing Iteration Demonstration
+  HC-SR04-NewPing-Iteration.ino
+  Demonstrates using Iteration function of NewPing Library for HC-SR04 Ultrasonic Range Finder
   Displays results on Serial Monitor
 
   DroneBot Workshop 2017
   http://dronebotworkshop.com
 */
 
-// Include DHT Libraries from Adafruit
-// Dependant upon Adafruit_Sensors Library
-#include "DHT.h";
+// This uses Serial Monitor to display Range Finder distance readings
 
 // Include NewPing Library
 #include "NewPing.h"
 
-// Define Constants
+// Hook up HC-SR04 with Trig to Arduino Pin 10, Echo to Arduino pin 13
+// Maximum Distance is 400 cm
 
-#define DHTPIN 22       // DHT-22 Output Pin connection
-#define DHTTYPE DHT11   // DHT Type is DHT 22 (AM2302)
 #define TRIGGER_PIN  52
 #define ECHO_PIN     53
 #define MAX_DISTANCE 400
-
+ 
 NewPing sonar(TRIGGER_PIN, ECHO_PIN, MAX_DISTANCE);
 
-// Define Variables
+float duration, distance;
 
-float hum;    // Stores humidity value in percent
-float temp;   // Stores temperature value in Celcius
-float duration; // Stores HC-SR04 pulse duration value
-float distance; // Stores calculated distance in cm
-float soundsp;  // Stores calculated speed of sound in M/S
-float soundcm;  // Stores calculated speed of sound in cm/ms
 int iterations = 5;
-
-// Initialize DHT sensor for normal 16mhz Arduino
-
-DHT dht(DHTPIN, DHTTYPE); 
-
 LiquidCrystal lcd( 8, 9, 4, 5, 6, 7);
 void setup() 
 {
   Serial.begin (9600);
-  dht.begin();
   lcd.begin(16,2);
   lcd.setCursor(0,0);
   lcd.print("Distance:");
 }
 
-void loop()
+void loop() 
 {
   lcd.setCursor(0,1);
-  
-  delay(2000);  // Delay so DHT-22 sensor can stabalize
    
-    hum = dht.readHumidity();  // Get Humidity value
-    temp= dht.readTemperature();  // Get Temperature value
-    
-    // Calculate the Speed of Sound in M/S
-    soundsp = 331.4 + (0.606 * temp) + (0.0124 * hum);
-    
-    // Convert to cm/ms
-    
-    soundcm = soundsp / 10000;
-    
   duration = sonar.ping_median(iterations);
   
-  // Calculate the distance
-  distance = (duration / 2) * soundcm;
+  // Determine distance from duration
+  // Use 343 metres per second as speed of sound
+  Serial.println(duration);
+  distance = (duration / 2) * 0.0343;
   
   // Send results to Serial Monitor
-    Serial.print("Distance: ");
-
-    if (distance >= 400 || distance <= 2) {
-    lcd.print("Out of range");
-    }
-    else {
     lcd.print(distance);
     lcd.print(" cm");
     delay(500);
-    }
-  
 }

@@ -14,11 +14,11 @@ const byte IN2 = 27;
 
 const int NUMBER_OF_FIELDS = 1;   // how many comma separated fields we expect
 int fieldIndex = 0;               // the current field being received
-double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-double values[NUMBER_OF_FIELDS];  // array holding each final value of the serial monitor inputs
+int dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
+int values[NUMBER_OF_FIELDS];  // array holding each final value of the serial monitor inputs
 int sign[NUMBER_OF_FIELDS];
 
-int singleLoop = true;
+int singleLoop = false;
 void setup() 
 {
   // Serial and pin mode setup
@@ -28,17 +28,9 @@ void setup()
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
   pinMode(ANV,OUTPUT);
-  //
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,HIGH);
-  analogWrite(ANV,50);
-  delay(500);
-  digitalWrite(IN1,HIGH);
-  digitalWrite(IN2,LOW);
-  analogWrite(ANV,50);
-  delay(500);
+  //Interrupt enable
+  ISR_Enable(true,true);    
   
-  ISR_Enable(false,true);
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
   {
     sign[i] = 1;
@@ -54,14 +46,24 @@ void loop()
       // To begin testing make sure the serial monitor commands are working
       // 1. make sure the linear actuator is at min lenght
       // 2. Try the following serial monitor commands: 50 then -50
-      Serial.print("Position Start: "); Serial.println(PWMP);
+      Serial.print("Position: "); Serial.println(PWMP);
       Mdirection(values[0]);
-      analogWrite(ANV, abs(values[0]));
-      delay(500);
-      digitalWrite(IN1,LOW);
-      digitalWrite(IN2,LOW);
-      analogWrite(ANV, 0);
-      Serial.print("Position End: "); Serial.println(PWMP);
+      analogWrite(ANV,abs(values[0]));
+      delay(10-30
+      00);
+  
+      Mdirection(0);
+      delay(1000);
+      Serial.print("Position: "); Serial.println(PWMP);
+  
+//      Mdirection(-values[0]);
+//      analogWrite(ANV,abs(values[0]));
+//      delay(1500);
+//      digitalWrite(IN1,LOW);
+//      digitalWrite(IN2,LOW);
+//      analogWrite(ANV,0);
+//      Serial.print("Position: "); Serial.println(PWMP);
+     singleLoop = false;
   }
   
 }
@@ -130,23 +132,24 @@ void serialEvent()
         dummy[i] = 0;
         sign[i] = 1;
       }
-      fieldIndex = 0;      
+      fieldIndex = 0;   
+      singleLoop = true;
     } 
   }
 }
-void Mdirection(double dir)
+void Mdirection(int dir)
 {
-  if(dir < 0)
-  {
-    //extend
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-  }
   if(dir > 0)
   {
-    //retract
+    //extend
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
+  }
+  else if(dir < 0)
+  {
+    //retract
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
   }
   else
   {
