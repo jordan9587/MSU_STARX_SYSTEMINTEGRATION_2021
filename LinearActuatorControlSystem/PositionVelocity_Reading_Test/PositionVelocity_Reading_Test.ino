@@ -1,111 +1,90 @@
-//PWM reading variables
-volatile unsigned long timer[4]; //timer that holds the rising and falling edge of PIN 24/DIO1->reads position waveform
-volatile double PWMS;
-volatile double PWMP; //holds Duty cycle value
-volatile long DutyS, DutyP;
+#include <PID_v1.h>
+#include <EnableInterrupt.h>
 
+#define SERIAL_PORT_SPEED 9600
+#define PWM_NUM  2
 
-//pinout constants
-const byte ANV = 2;
-const byte DIOS = 24;
-const byte DIOP = 25;
-const byte IN1 = 26;
-const byte IN2 = 27;
+#define PWMS  0
+#define PWMP  1
+
+#define PWMS_INPUT  A0
+#define PWMP_INPUT  A1
+
+uint16_t pwm_values[PWM_NUM];
+uint32_t pwm_start[PWM_NUM];
+volatile uint16_t pwm_shared[PWM_NUM];
+const byte ANV = 5;
+const byte IN1 = 2;
+const byte IN2 = 3;
 
 const int NUMBER_OF_FIELDS = 1;   // how many comma separated fields we expect
 int fieldIndex = 0;               // the current field being received
 int dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-int values[NUMBER_OF_FIELDS];  // array holding each final value of the serial monitor inputs
+int serial_values[NUMBER_OF_FIELDS];  // array holding each final value of the serial monitor inputs
 int sign[NUMBER_OF_FIELDS];
 
-int singleLoop = false;
+bool singleLoop = false;
+bool condition = true;
+int d1, d2, displacement,velocity;
 void setup() 
 {
-  // Serial and pin mode setup
-  Serial.begin(9600);
-  pinMode(DIOS, INPUT);
-  pinMode(DIOP, INPUT);
-  pinMode(IN1,OUTPUT);
-  pinMode(IN2,OUTPUT);
-  pinMode(ANV,OUTPUT);
-  //Interrupt enable
-  ISR_Enable(true,true);    
-  
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
   {
     sign[i] = 1;
   }
+  Serial.begin(9600); 
+  pinMode(PWMS_INPUT, INPUT);
+  pinMode(PWMP_INPUT, INPUT);
+  pinMode(ANV,OUTPUT);
+  pinMode(IN1,OUTPUT);
+  pinMode(IN2,OUTPUT);
+  pinMode(22,OUTPUT);
+  digitalWrite(22,HIGH);
+  enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
+  enableInterrupt(PWMP_INPUT, calc_position, CHANGE);  
 }
 
 void loop() 
 {
-  // put your main code here, to run repeatedly:
-  //Serial.println(PWMS);
   while(singleLoop)
   {
-      // To begin testing make sure the serial monitor commands are working
-      // 1. make sure the linear actuator is at min lenght
-      // 2. Try the following serial monitor commands: 50 then -50
-      Serial.print("Position: "); Serial.println(PWMP);
-      Mdirection(values[0]);
-      analogWrite(ANV,abs(values[0]));
-      delay(10-30
-      00);
-  
-      Mdirection(0);
-      delay(1000);
-      Serial.print("Position: "); Serial.println(PWMP);
-  
+    pwm_read_values();
+    d1 = pwm_values[PWMP];
+    Serial.println(serial_values[0]);
+    Serial.print("Position start: "); Serial.print(pwm_values[PWMP]);
+    Mdirection(serial_values[0]);
+    analogWrite(ANV,abs(serial_values[0]));
+    delay(500);
+    pwm_read_values();
+    velocity = pwm_values[PWMS] - 509;
+    delay(500);
+    Mdirection(0);
+    delay(500);
+    pwm_read_values();
+    d2 = pwm_values[PWMP];
+    Serial.print("   Position end: "); Serial.print(pwm_values[PWMP]);
+    displacement = d1 - d2;
+    Serial.print("   Displacement: "); Serial.println(displacement);
+    Serial.print("Speed: "); Serial.println(velocity);
 //      Mdirection(-values[0]);
 //      analogWrite(ANV,abs(values[0]));
 //      delay(1500);
 //      digitalWrite(IN1,LOW);
 //      digitalWrite(IN2,LOW);
-//      analogWrite(ANV,0);
+     //analogWrite(ANV,0);
 //      Serial.print("Position: "); Serial.println(PWMP);
      singleLoop = false;
   }
-  
-}
-void ISR1() 
-{
-  switch(digitalRead(24))
+  if(condition)
   {
-    case 0:
-    timer[0] = micros();
-    break;
-    case 1:
-    timer[1] = micros();
-    DutyS = timer[1] - timer[0];
-    PWMS = DutyS;
-    break;
+    analogWrite(ANV,abs(serial_values[0]));
+    pwm_read_values();
+    velocity = pwm_values[PWMS] - 510;
+    Serial.print(velocity); Serial.print(","); Serial.println(pwm_values[PWMP]);
+    singleLoop = false;
   }
 }
-void ISR2()  
-{
-  switch(digitalRead(25)) //Reads pin 25
-  {
-    case 0: // If the PWM is at the lowest
-    timer[2] = micros(); //Measures how long PMW is at the lowest
-    break;
-    case 1: //If the PWM is at the highest
-    timer[3] = micros();  //Measures how long PMW is at the highest
-    DutyP = timer[3] - timer[2]; // Comapres the time between the highest and the lowest
-    PWMP = DutyP;
-    break;
-  }
-}
-void ISR_Enable(bool Enable_speed, bool Enable_position)
-{
-  if(Enable_speed)
-  {
-  attachInterrupt(digitalPinToInterrupt(24),ISR1, CHANGE);
-  }
-  if(Enable_position)
-  {
-  attachInterrupt(digitalPinToInterrupt(25),ISR2, CHANGE);
-  }
-}
+
 void serialEvent()
 {
   if(Serial.available() > 0)
@@ -124,17 +103,23 @@ void serialEvent()
     }
     else if(ch == '-')
       sign[fieldIndex] = -1;
+    else if(ch == 's')
+    {
+      condition = !condition;
+      Serial.println(condition);
+    } 
     else
     {
       for(int i = 0; i < NUMBER_OF_FIELDS; i++)
       {
-        values[i] = dummy[i]*sign[i];
+        serial_values[i] = dummy[i]*sign[i];
         dummy[i] = 0;
         sign[i] = 1;
       }
       fieldIndex = 0;   
       singleLoop = true;
     } 
+    
   }
 }
 void Mdirection(int dir)
@@ -157,3 +142,29 @@ void Mdirection(int dir)
     digitalWrite(IN2, LOW);
   }
 }
+void pwm_read_values() 
+{
+  noInterrupts();
+  memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
+  interrupts();
+  //pwm_values[PWMS] = pwm_values[PWMS] - 510;
+}
+
+void calc_input(uint8_t channel, uint8_t input_pin) 
+{
+  if (digitalRead(input_pin) == HIGH) 
+  {
+    pwm_start[channel] = micros();
+  } 
+  else 
+  {
+    uint16_t pwm_compare = (uint16_t)(micros() - pwm_start[channel]);
+    if(pwm_compare > 1002)
+    {
+      pwm_values[PWMP] = 0;
+    }
+    pwm_shared[channel] = pwm_compare;
+  }
+}
+void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
+void calc_position() { calc_input(PWMP, PWMP_INPUT); }

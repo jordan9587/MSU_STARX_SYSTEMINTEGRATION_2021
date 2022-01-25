@@ -1,27 +1,38 @@
 #include <PID_v1.h>
+#include <EnableInterrupt.h>
 
-//PWM reading variables
-volatile unsigned long timer[4]; //timer that holds the rising and falling edge of PIN 24/DIO1->reads position waveform
-volatile double PWMS;
-volatile double PWMP; //holds Duty cycle value
-volatile long DutyS, DutyP;
-double error;
-//pinout constants
-const byte ANV = 2;
-const byte DIOS = 24;
-const byte DIOP = 25;
-const byte IN1 = 26;
-const byte IN2 = 27;
+#define SERIAL_PORT_SPEED 9600
+#define PWM_NUM  2
+
+#define PWMS  0
+#define PWMP  1
+
+#define PWMS_INPUT  A0
+#define PWMP_INPUT  A1
+
+uint16_t pwm_values[PWM_NUM];
+uint32_t pwm_start[PWM_NUM];
+volatile uint16_t pwm_shared[PWM_NUM];
+
+const byte ANV = 5;
+const byte IN1 = 2;
+const byte IN2 = 3;
+
+//Excel data
+const int NUMBER_OF_FIELDS = 1; // how many comma separated fields we expect
+int fieldIndex = 0;            // the current field being received
+double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
+double serial_values[NUMBER_OF_FIELDS];
+int sign[NUMBER_OF_FIELDS];
+bool singleLoop = false;
+bool condition = false;
+
 //PID
 double currentSpeed, outputSpeed ,desiredSpeed;
 double HP = 1, HI = 5, HD = 0;
 PID loadCompensator(&currentSpeed, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
-//Excel data
-const int NUMBER_OF_FIELDS = 3; // how many comma separated fields we expect
-int fieldIndex = 0;            // the current field being received
-double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-double values[NUMBER_OF_FIELDS];
-int sign[NUMBER_OF_FIELDS] = {1};
+int mode = 1;
+int displacement;
 void setup() 
 {
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
@@ -29,38 +40,54 @@ void setup()
     sign[i] = 1;
   }
   Serial.begin(9600);
-  pinMode(DIOS, INPUT);
-  pinMode(DIOP, INPUT);
+  pinMode(PWMS_INPUT, INPUT);
+  pinMode(PWMP_INPUT, INPUT);
+  pinMode(ANV,OUTPUT);
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
-  pinMode(ANV,OUTPUT);
+  pinMode(22,OUTPUT);
+  digitalWrite(22,HIGH);
+  enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
+  enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
+  
   //PI Controller
-  currentSpeed = PWMS;
+  pwm_read_values();
+  currentSpeed = pwm_values[PWMS] - 509;
   desiredSpeed = 50;
-  loadCompensator.SetMode(MANUAL);
-  loadCompensator.SetOutputLimits(0,205);
-  //loadCompensator.SetTunings(100,100,0);
-  //analogWrite(ANV,5);
-  digitalWrite(IN1,LOW);
-  digitalWrite(IN2,LOW);
-  ISR_Enable(true,false);
+  loadCompensator.SetMode(AUTOMATIC);
+  loadCompensator.SetOutputLimits(0,255);
 }
+
 void loop() 
 {
-  //Serial.print(PWMS); Serial.print(",");Serial.print(outputSpeed); Serial.println(",");
-  //Serial.println(PWMS);
-  currentSpeed = abs(PWMS);
+  while(singleLoop)
+  {
+    
+    Serial.println("Setting...");
+    delay(1000);
+    desiredSpeed = abs(serial_values[0]);
+    Mdirection(serial_values[0]);
+    loadCompensator.SetTunings(HP,HI,0);
+    singleLoop = false;
+  }
+  pwm_read_values();
+  PIDtoggle(pwm_values[PWMS]);
+  currentSpeed = abs(pwm_values[PWMS] - 509);
+  displacement = pwm_values[PWMP];
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
+  Serial.print(currentSpeed); Serial.print(" , ");Serial.print(desiredSpeed); Serial.print(" , "); Serial.print(mode); Serial.print(" , "); Serial.print(HP); Serial.print(" , "); Serial.println(HI);
 }
 void serialEvent()
 {
   if(Serial.available() > 0)
   {
     char ch = Serial.read();
+    //Serial.println(ch);
     if(ch >= '0' && ch <= '9')
     {
       dummy[fieldIndex] = (dummy[fieldIndex] * 10) + (ch - '0');
+      //Serial.println(dummy[fieldIndex]);
     }
     else if(ch == ',')
     {
@@ -73,73 +100,30 @@ void serialEvent()
     {
       for(int i = 0; i < NUMBER_OF_FIELDS; i++)
       {
-        values[i] = dummy[i]*sign[i];
+        serial_values[i] = dummy[i]*sign[i];
         dummy[i] = 0;
         sign[i] = 1;
-        Serial.println(values[i]);
       }
-      fieldIndex = 0;
-      //desiredSpeed = values[0];
-      Mdirection(values[0]);
-      loadCompensator.SetTunings(values[1],values[2],0);
-      PIDtoggle();
+      fieldIndex = 0;   
+      singleLoop = true;
     } 
+    
   }
 }
-void ISR1() 
+
+void Mdirection(int dir)
 {
-  switch(digitalRead(24))
-  {
-    case 0:
-    timer[0] = micros();
-    break;
-    case 1:
-    timer[1] = micros();
-    DutyS = timer[1] - timer[0];
-    PWMS = DutyS - 501;
-    break;
-  }
-}
-void ISR2()  
-{
-  switch(digitalRead(25)) //Reads pin 25
-  {
-    case 0: // If the PWM is at the lowest
-    timer[2] = micros(); //Measures how long PMW is at the lowest
-    break;
-    case 1: //If the PWM is at the highest
-    timer[3] = micros();  //Measures how long PMW is at the highest
-    DutyP = timer[3] - timer[2]; // Comapres the time between the highest and the lowest
-    PWMP = DutyP;
-    break;
-  }
-}
-void ISR_Enable(bool Enable_speed, bool Enable_position)
-{
-  if(Enable_speed)
-  {
-  attachInterrupt(digitalPinToInterrupt(24),ISR1, CHANGE);
-  }
-  if(Enable_position)
-  {
-  attachInterrupt(digitalPinToInterrupt(25),ISR2, CHANGE);
-  }
-}
-void Mdirection(double error)
-{
-  if(error < 0)
+  if(dir > 0)
   {
     //extend
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
-    //M_dir = 0;
-  }
-  if(error > 0)
-  {
-    //retract
     digitalWrite(IN1, LOW);
     digitalWrite(IN2, HIGH);
-    //M_dir = 1;
+  }
+  else if(dir < 0)
+  {
+    //retract
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
   }
   else
   {
@@ -147,14 +131,44 @@ void Mdirection(double error)
     digitalWrite(IN2, LOW);
   }
 }
-void PIDtoggle()
+void pwm_read_values() 
 {
-  if((digitalRead(26) == 1 && digitalRead(27) == 1) || (digitalRead(26) == 0 && digitalRead(27) == 0))
-      {
-        loadCompensator.SetMode(MANUAL);
-      }
-      else
-      {
-        loadCompensator.SetMode(AUTOMATIC);
-      }
+  noInterrupts();
+  memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
+  interrupts();
+  //pwm_values[PWMS] = pwm_values[PWMS] - 510;
+}
+
+void calc_input(uint8_t channel, uint8_t input_pin) 
+{
+  if (digitalRead(input_pin) == HIGH) 
+  {
+    pwm_start[channel] = micros();
+  } 
+  else 
+  {
+    uint16_t pwm_compare = (uint16_t)(micros() - pwm_start[channel]);
+    if(pwm_compare > 1002)
+    {
+      pwm_compare = 0;
+    }
+    pwm_shared[channel] = pwm_compare;
+  }
+}
+void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
+void calc_position() { calc_input(PWMP, PWMP_INPUT); }
+
+//the code below is going through testing
+void PIDtoggle(int hardstop)
+{
+  if(hardstop < 515 && hardstop > 500)
+  {
+    loadCompensator.SetMode(MANUAL);
+    mode = MANUAL;
+  }
+  else
+  {
+    loadCompensator.SetMode(AUTOMATIC);
+    mode = AUTOMATIC;
+  }
 }
