@@ -56,7 +56,7 @@ void loop()
     analogWrite(ANV,abs(serial_values[0]));
     delay(500);
     pwm_read_values();
-    velocity = pwm_values[PWMS] - 509;
+    velocity = pwm_values[PWMS] - 510;
     delay(500);
     Mdirection(0);
     delay(500);
