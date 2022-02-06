@@ -1,6 +1,6 @@
 #include <PID_v1.h>
 #include <EnableInterrupt.h>
-
+#include <GyroToVelocity.h>
 #define SERIAL_PORT_SPEED 9600
 #define PWM_NUM  2
 
@@ -29,10 +29,10 @@ bool condition = false;
 
 //PID
 double currentSpeed, outputSpeed ,desiredSpeed;
-double HP = 1, HI = 5, HD = 0;
+double HP = 0.5, HI = 5, HD = 0;
 PID loadCompensator(&currentSpeed, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 1;
-int displacement;
+double displacement, velocity;
 void setup() 
 {
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
@@ -69,14 +69,14 @@ void loop()
     Mdirection(serial_values[0]);
     loadCompensator.SetTunings(HP,HI,0);
     singleLoop = false;
+    loadCompensator.SetMode(AUTOMATIC);
   }
   pwm_read_values();
   PIDtoggle(pwm_values[PWMS]);
-  currentSpeed = abs(pwm_values[PWMS] - 509);
-  displacement = pwm_values[PWMP];
+  currentSpeed = abs(velocity);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.print(currentSpeed); Serial.print(" , ");Serial.print(desiredSpeed); Serial.print(" , "); Serial.print(mode); Serial.print(" , "); Serial.print(HP); Serial.print(" , "); Serial.println(HI);
+  Serial.println(currentSpeed);
 }
 void serialEvent()
 {
@@ -136,7 +136,8 @@ void pwm_read_values()
   noInterrupts();
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
   interrupts();
-  //pwm_values[PWMS] = pwm_values[PWMS] - 510;
+  velocity = (1/26)*(pwm_values[PWMS] - 510) + 1/13;
+  displacement = 7.5 / 990 * pwm_values[PWMP] - 7.5;
 }
 
 void calc_input(uint8_t channel, uint8_t input_pin) 
@@ -161,7 +162,7 @@ void calc_position() { calc_input(PWMP, PWMP_INPUT); }
 //the code below is going through testing
 void PIDtoggle(int hardstop)
 {
-  if(hardstop < 515 && hardstop > 500)
+  if(hardstop > 500 && hardstop < 515)
   {
     loadCompensator.SetMode(MANUAL);
     mode = MANUAL;
