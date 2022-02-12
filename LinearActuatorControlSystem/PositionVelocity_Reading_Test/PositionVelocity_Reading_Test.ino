@@ -1,6 +1,9 @@
-#include <PID_v1.h>
-#include <EnableInterrupt.h>
-
+#include <PID_v1.h>           //PID library
+#include <EnableInterrupt.h>    //interrupt library
+#include <Adafruit_MPU6050.h>   //MPU Gyro library
+#include <Adafruit_Sensor.h>    
+#include <Wire.h>               //I2C communication library
+#include <GyroToVelocity.h>
 #define SERIAL_PORT_SPEED 9600
 #define PWM_NUM  2
 
@@ -25,7 +28,7 @@ int sign[NUMBER_OF_FIELDS];
 
 bool singleLoop = false;
 bool condition = true;
-int d1, d2, displacement,velocity;
+double d1, d2, displacement,velocity;
 void setup() 
 {
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
@@ -79,7 +82,7 @@ void loop()
   {
     analogWrite(ANV,abs(serial_values[0]));
     pwm_read_values();
-    velocity = pwm_values[PWMS] - 510;
+    velocity = pwm_values[PWMS] -510;
     Serial.print(velocity); Serial.print(","); Serial.println(pwm_values[PWMP]);
     singleLoop = false;
   }
@@ -147,7 +150,8 @@ void pwm_read_values()
   noInterrupts();
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
   interrupts();
-  //pwm_values[PWMS] = pwm_values[PWMS] - 510;
+//  velocity = (1/26)*(pwm_values[PWMS] - 510) + 1/13;
+//  displacement = 7.5 / 990 * pwm_values[PWMP] - 7.5;
 }
 
 void calc_input(uint8_t channel, uint8_t input_pin) 
