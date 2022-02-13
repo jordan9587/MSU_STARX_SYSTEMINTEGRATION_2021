@@ -3,26 +3,33 @@
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
+#include <GyroToVelocity.h>
 
-#define SERIAL_PORT_SPEED 9600
-#define PWM_NUM  2
+#define SERIAL_PORT_SPEED 9600 
 
-#define PWMS  0
-#define PWMP  1
+#define PWM_NUM  2 //number of PWM signals
+#define PWMS  0 //speed is stored in the 0 position of the array
+#define PWMP  1 //position is stored in the 1 position of the array
 
-#define PWMS_INPUT  A0
-#define PWMP_INPUT  A1
+#define PWMS_INPUT  A0 //analog pin for the speed reading
+#define PWMP_INPUT  A1 //analog pin for the position reading
 
-uint16_t pwm_values[PWM_NUM];
-uint32_t pwm_start[PWM_NUM];
-volatile uint16_t pwm_shared[PWM_NUM];
+//final zero rate offset in radions/s:
+//-0.0868,0.0044,0.0180
+const double X_OFFSET = -0.0868;
+const double Y_OFFSET = 0.0044;
+const double Z_OFFSET = 0.0180;
+
+uint32_t pwm_start[PWM_NUM]; // stores the time when PWM square wave begins
+uint16_t pwm_values[PWM_NUM]; //stores the width of the PWM pulse in microseconds
+volatile uint16_t pwm_shared[PWM_NUM]; 
 
 const byte ANV = 5;
 const byte IN1 = 2;
 const byte IN2 = 3;
 
 Adafruit_MPU6050 mpu; //included - Ben
-
+double corrected_X, corrected_Y, corrected_Z;
 //Excel data
 const int NUMBER_OF_FIELDS = 1; // how many comma separated fields we expect
 int fieldIndex = 0;            // the current field being received
@@ -30,14 +37,13 @@ double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
 double serial_values[NUMBER_OF_FIELDS];
 int sign[NUMBER_OF_FIELDS];
 bool singleLoop = false;
-bool condition = false;
 
 //PID
 double currentSpeed, outputSpeed ,desiredSpeed;
-double HP = 1, HI = 5, HD = 0;
+double HP = 100, HI = 500, HD = 0;
 PID loadCompensator(&currentSpeed, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 1;
-int displacement;
+double displacement;
 void setup() 
 {
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
@@ -45,7 +51,7 @@ void setup()
     sign[i] = 1;
   }
 
-  Serial.begin(115200); //from 9600 to 115200 - Ben
+  Serial.begin(9600); //from 9600 to 115200 - Ben
 
   pinMode(PWMS_INPUT, INPUT);
   pinMode(PWMP_INPUT, INPUT);
@@ -59,15 +65,16 @@ void setup()
   
   //PI Controller
   pwm_read_values();
-  currentSpeed = pwm_values[PWMS] - 509;
   desiredSpeed = 50;
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
-
+  HorK(HIP);
   //Checks for gyroscope - Ben
-  if (!mpu.begin()) {
+  if (!mpu.begin()) 
+  {
     Serial.println("Failed to find MPU6050 chip");
-    while (1) {
+    while (1) 
+    {
       delay(10);
     }
   }
@@ -142,23 +149,22 @@ void loop()
     Serial.println("Setting...");
     delay(1000);
     desiredSpeed = abs(serial_values[0]);
-    loadCompensator.SetTunings(HP,HI,0);
     singleLoop = false;
   }
   //print sensor values - Ben
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
 
-  Serial.print("Acceleration X: ");
-  Serial.print(a.acceleration.x);
+  //Serial.print("Acceleration X: ");
+  //Serial.print(a.acceleration.x);
   //Serial.print(", Y: ");
   //Serial.print(a.acceleration.y);
   //Serial.print(", Z: ");
   //Serial.print(a.acceleration.z);
-  Serial.println(" m/s^2");
+  //Serial.println(" m/s^2");
 
   Serial.print("Rotation X: ");
-  Serial.print(g.gyro.x);
+  Serial.print(g.gyro.x - X_OFFSET);
   //Serial.print(", Y: ");
   //Serial.print(g.gyro.y);
   //Serial.print(", Z: ");
@@ -168,14 +174,14 @@ void loop()
   //Serial.print("Temperature: ");
   //Serial.print(temp.temperature);
   //Serial.println(" degC");
-  Mdirection(g.gyro.x);
+  corrected_X = g.gyro.x - X_OFFSET;
+  desiredSpeed = geometry(corrected_X, displacement);
+  Mdirection(corrected_X);
   pwm_read_values();
   PIDtoggle(pwm_values[PWMS]);
-  currentSpeed = abs(pwm_values[PWMS] - 509);
-  displacement = pwm_values[PWMP];
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.print(currentSpeed); Serial.print(" , ");Serial.print(desiredSpeed); Serial.print(" , "); Serial.print(mode); Serial.print(" , "); Serial.print(HP); Serial.print(" , "); Serial.println(HI);
+  Serial.print(currentSpeed); Serial.print(" , ");Serial.println(desiredSpeed);
 
   
 
@@ -238,7 +244,8 @@ void pwm_read_values()
   noInterrupts();
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
   interrupts();
-  //pwm_values[PWMS] = pwm_values[PWMS] - 510;
+  currentSpeed = -((double)(pwm_values[PWMS] - 510)/26+1/13);
+  displacement = abs(7.5 / 990 * pwm_values[PWMP] - 7.5);
 }
 
 void calc_input(uint8_t channel, uint8_t input_pin) 

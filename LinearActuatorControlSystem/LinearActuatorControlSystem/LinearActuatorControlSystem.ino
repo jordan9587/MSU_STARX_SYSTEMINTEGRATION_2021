@@ -29,10 +29,10 @@ bool condition = false;
 
 //PID
 double currentSpeed, outputSpeed ,desiredSpeed;
-double HP = 0.5, HI = 5, HD = 0;
+double HP = 100, HI = 500, HD = 0;
 PID loadCompensator(&currentSpeed, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 1;
-double displacement, velocity;
+float displacement, velocity;
 void setup() 
 {
   for(int i = 0; i < NUMBER_OF_FIELDS; i++)
@@ -52,7 +52,6 @@ void setup()
   
   //PI Controller
   pwm_read_values();
-  currentSpeed = pwm_values[PWMS] - 509;
   desiredSpeed = 50;
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
@@ -69,11 +68,10 @@ void loop()
     Mdirection(serial_values[0]);
     loadCompensator.SetTunings(HP,HI,0);
     singleLoop = false;
-    loadCompensator.SetMode(AUTOMATIC);
+    //loadCompensator.SetMode(AUTOMATIC);
   }
   pwm_read_values();
   PIDtoggle(pwm_values[PWMS]);
-  currentSpeed = abs(velocity);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
   Serial.println(currentSpeed);
@@ -136,8 +134,8 @@ void pwm_read_values()
   noInterrupts();
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
   interrupts();
-  velocity = (1/26)*(pwm_values[PWMS] - 510) + 1/13;
-  displacement = 7.5 / 990 * pwm_values[PWMP] - 7.5;
+  currentSpeed = abs(((double)(pwm_values[PWMS] - 510)/26+1/13));
+  displacement = abs(7.5 / 990 * pwm_values[PWMP] - 7.5);
 }
 
 void calc_input(uint8_t channel, uint8_t input_pin) 
