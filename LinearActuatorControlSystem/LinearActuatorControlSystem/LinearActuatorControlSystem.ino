@@ -19,13 +19,8 @@ const byte IN1 = 2;
 const byte IN2 = 3;
 
 //Excel data
-const int NUMBER_OF_FIELDS = 1; // how many comma separated fields we expect
-int fieldIndex = 0;            // the current field being received
-double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-double serial_values[NUMBER_OF_FIELDS];
-int sign[NUMBER_OF_FIELDS];
+double serial_value;
 bool singleLoop = false;
-bool condition = false;
 
 //PID
 double currentSpeed, outputSpeed ,desiredSpeed;
@@ -35,10 +30,6 @@ int mode = 1;
 float displacement, velocity;
 void setup() 
 {
-  for(int i = 0; i < NUMBER_OF_FIELDS; i++)
-  {
-    sign[i] = 1;
-  }
   Serial.begin(9600);
   pinMode(PWMS_INPUT, INPUT);
   pinMode(PWMP_INPUT, INPUT);
@@ -63,9 +54,8 @@ void loop()
   {
     
     Serial.println("Setting...");
-    delay(1000);
-    desiredSpeed = abs(serial_values[0]);
-    Mdirection(serial_values[0]);
+    desiredSpeed = abs(serial_value);
+    Mdirection(serial_value);
     loadCompensator.SetTunings(HP,HI,0);
     singleLoop = false;
     //loadCompensator.SetMode(AUTOMATIC);
@@ -74,42 +64,24 @@ void loop()
   PIDtoggle(pwm_values[PWMS]);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.println(currentSpeed);
+  Serial.print(currentSpeed); Serial.print(" , "); Serial.println(outputSpeed);
 }
+
 void serialEvent()
 {
+  //check if there is something in the input
   if(Serial.available() > 0)
   {
-    char ch = Serial.read();
-    //Serial.println(ch);
-    if(ch >= '0' && ch <= '9')
-    {
-      dummy[fieldIndex] = (dummy[fieldIndex] * 10) + (ch - '0');
-      //Serial.println(dummy[fieldIndex]);
-    }
-    else if(ch == ',')
-    {
-      if(fieldIndex < (NUMBER_OF_FIELDS - 1))
-        fieldIndex++;
-    }
-    else if(ch == '-')
-      sign[fieldIndex] = -1;
-    else
-    {
-      for(int i = 0; i < NUMBER_OF_FIELDS; i++)
-      {
-        serial_values[i] = dummy[i]*sign[i];
-        dummy[i] = 0;
-        sign[i] = 1;
-      }
-      fieldIndex = 0;   
-      singleLoop = true;
-    } 
-    
+    //get the input
+    String input = Serial.readString();
+    //update with new length goal
+    serial_value = input.toDouble();
+    singleLoop = true;
+    //Serial.println(desired_actuator_length);
   }
 }
 
-void Mdirection(int dir)
+void Mdirection(float dir)
 {
   if(dir > 0)
   {
