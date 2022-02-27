@@ -18,12 +18,13 @@
 #define IN2 3 //direction of actuation
 //final zero rate offset in radions/s:
 
-//-0.0868,0.0044,0.0180
+//-0.0868,0.0044,0.0180 - Bruno's Gyro
 //-0.0511, -0.0128, 0.0009
+//0.0048, -0.0523, -0.0302 - Ben's Gyro
 
-const double X_OFFSET = -0.0868;
-const double Y_OFFSET = -0.0044;
-const double Z_OFFSET = 0.0180;
+const double X_OFFSET = 0.0048;
+const double Y_OFFSET = -0.0523;
+const double Z_OFFSET = -0.0302;
 
 uint32_t pwm_start[PWM_NUM]; // stores the time when PWM square wave begins
 uint16_t pwm_values[PWM_NUM]; //stores the width of the PWM pulse in microseconds
@@ -65,7 +66,7 @@ void setup()
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
   
   //PI Controller
-  pwm_read_values();
+  pwm_read_values(); 
   desiredSpeed = 0;
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
@@ -119,14 +120,14 @@ void loop()
   //Serial.print(temp.temperature);
   //Serial.println(" degC");
   
-  if(abs(g.gyro.y - Y_OFFSET) <= 0.05)
+  if(abs(g.gyro.y - Y_OFFSET) <= 0.05)//Sets the gyro value to 0 if it is below the threshold
   {
-    Serial.println("below threshold");
+    //Serial.println("below threshold");
     corrected_Y = 0;
   }
   else
   {
-    Serial.println("above threshold");
+    //Serial.println("above threshold");
     corrected_Y = g.gyro.y - Y_OFFSET;
   }
   pwm_read_values();
@@ -135,12 +136,12 @@ void loop()
   PIDtoggle(pwm_values[PWMS]);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  //Serial.print(corrected_Y);Serial.print(","); Serial.print(currentSpeed); Serial.print(",");Serial.print(desiredSpeed);Serial.print(","); Serial.println(displacement);
+  Serial.print(corrected_Y);Serial.print(","); Serial.print(currentSpeed); Serial.print(",");Serial.print(desiredSpeed);Serial.print(","); Serial.println(displacement);
 
   
 
 }
-void serialEvent()
+void serialEvent() //Outputs data
 {
   if(Serial.available() > 0)
   {
@@ -195,18 +196,18 @@ void Mdirection(float dir)
 }
 void pwm_read_values() 
 {
-  noInterrupts();
-  memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
-  interrupts();
+  noInterrupts(); //Disables interrupts to make sure it doesnt mess up the memory copy below
+  memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared)); //memcpy handles memory to memory copy, copies from pwm_shared to pwm_values
+  interrupts(); //Enables interrupts
   currentSpeed = ((double)(pwm_values[PWMS] - 510)/26+1/13); //calculates the real value [inch/sec] for the actuator speed
   displacement = abs(7.5 / 990 * pwm_values[PWMP] - 7.5); //calculates the real value [inch] for the actuator position
 }
 
-void calc_input(uint8_t channel, uint8_t input_pin) 
+void calc_input(uint8_t channel, uint8_t input_pin) //Does the math for the PWM data
 {
-  if (digitalRead(input_pin) == HIGH) 
+  if (digitalRead(input_pin) == HIGH) //Measures how long the PWM is that its peak
   {
-    pwm_start[channel] = micros();
+    pwm_start[channel] = micros(); //Micros returns the number of microseconds since the board began running
   } 
   else 
   {
@@ -222,16 +223,16 @@ void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
 void calc_position() { calc_input(PWMP, PWMP_INPUT); }
 
 //the code below is going through testing
-void PIDtoggle(int hardstop)
+void PIDtoggle(int hardstop) 
 {
   if(hardstop < 515 && hardstop > 500)
   {
-    loadCompensator.SetMode(MANUAL);
+    loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
     mode = MANUAL;
   }
   else
   {
-    loadCompensator.SetMode(AUTOMATIC);
+    loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
     mode = AUTOMATIC;
   }
 }
