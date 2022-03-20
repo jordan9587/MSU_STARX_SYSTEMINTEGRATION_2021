@@ -39,11 +39,12 @@ double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
 double serial_values[NUMBER_OF_FIELDS];
 int sign[NUMBER_OF_FIELDS];
 bool singleLoop = false;
+bool hardstop = true;
 
 //PID
-double currentSpeed, outputSpeed ,desiredSpeed;
-double HP = 100, HI = 500, HD = 0;
-PID loadCompensator(&currentSpeed, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
+double currentSpeed, currentSpeed_abs, outputSpeed ,desiredSpeed,desiredSpeed2;
+double HP = 500, HI = 0.2, HD = 10;
+PID loadCompensator(&currentSpeed_abs, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 0; //keeps track if PID is on or off
 double displacement; //position variable
 void setup() 
@@ -61,7 +62,7 @@ void setup()
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
   pinMode(22,OUTPUT);
-  digitalWrite(22,HIGH);
+  //digitalWrite(22,HIGH);
   enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
   
@@ -81,7 +82,7 @@ void setup()
       delay(10);
     }
   }
-  Serial.println("MPU6050 Found!");
+  //Serial.println("MPU6050 Found!");
   //range settings - Ben
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
@@ -124,20 +125,32 @@ void loop()
   {
     //Serial.println("below threshold");
     corrected_Y = 0;
+    loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
+    hardstop = true;
   }
   else
   {
     //Serial.println("above threshold");
     corrected_Y = g.gyro.y - Y_OFFSET;
+    loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
+    hardstop = false;
   }
+  //PIDtoggle(hardstop);
   pwm_read_values();
   desiredSpeed = abs(geometry(corrected_Y, displacement));
+  
+  desiredSpeed2 = geometry(corrected_Y, displacement);
+//  if(hardstop == false)
+//  {
+//    desiredSpeed = 1; 
+//    desiredSpeed2 = desiredSpeed2/abs(desiredSpeed2);
+//  }
   Mdirection(corrected_Y);
-  PIDtoggle(pwm_values[PWMS]);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.print(corrected_Y);Serial.print(","); Serial.print(currentSpeed); Serial.print(",");Serial.print(desiredSpeed);Serial.print(","); Serial.println(displacement);
-
+  Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
+  //Serial.println(desiredSpeed2);
+  //Serial.println(corrected_Y); 
   
 
 }
@@ -200,6 +213,7 @@ void pwm_read_values()
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared)); //memcpy handles memory to memory copy, copies from pwm_shared to pwm_values
   interrupts(); //Enables interrupts
   currentSpeed = ((double)(pwm_values[PWMS] - 510)/26+1/13); //calculates the real value [inch/sec] for the actuator speed
+  currentSpeed_abs = abs(currentSpeed);
   displacement = abs(7.5 / 990 * pwm_values[PWMP] - 7.5); //calculates the real value [inch] for the actuator position
 }
 
@@ -223,16 +237,18 @@ void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
 void calc_position() { calc_input(PWMP, PWMP_INPUT); }
 
 //the code below is going through testing
-void PIDtoggle(int hardstop) 
+void PIDtoggle(bool hardstop) 
 {
-  if(hardstop < 515 && hardstop > 500)
+  if(hardstop == true)
   {
     loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
     mode = MANUAL;
+    digitalWrite(22,HIGH);
   }
   else
   {
     loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
     mode = AUTOMATIC;
+    digitalWrite(22,LOW);
   }
 }
