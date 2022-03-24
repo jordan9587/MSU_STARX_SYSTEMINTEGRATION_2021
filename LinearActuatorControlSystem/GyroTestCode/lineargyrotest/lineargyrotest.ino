@@ -16,15 +16,18 @@
 #define ANV 5 //analog voltage speed control pin
 #define IN1 2 //direction of actuation
 #define IN2 3 //direction of actuation
-//final zero rate offset in radions/s:
 
-//-0.0868,0.0044,0.0180 - Bruno's Gyro
-//-0.0511, -0.0128, 0.0009
-//0.0048, -0.0523, -0.0302 - Ben's Gyro
-
-const double X_OFFSET = 0.0048;
-const double Y_OFFSET = -0.0523;
-const double Z_OFFSET = -0.0302;
+//zero rate offset in radions/s
+//recalibrate gyros periodically, probably once a month or before testing
+const double gyro1[] = {-0.0213, -0.0192, -0.03};
+const double gyro2[] = {-0.0919, 0.052, -0.019};
+const double gyro3[] = {-0.0511, -0.0076, -0.0019};
+const double gyro4[] = {-0.0588, -0.0185, -0.0298};
+const double gyro5[] = {-0.0231, -0.0526, -0.0486};
+//variable that holds the specific gyro offset
+double X_OFFSET = 0;
+double Y_OFFSET = 0;
+double Z_OFFSET = 0;
 
 uint32_t pwm_start[PWM_NUM]; // stores the time when PWM square wave begins
 uint16_t pwm_values[PWM_NUM]; //stores the width of the PWM pulse in microseconds
@@ -33,27 +36,18 @@ volatile uint16_t pwm_shared[PWM_NUM]; //array used in the interrupt routine to 
 Adafruit_MPU6050 mpu; //included - Ben
 double corrected_X, corrected_Y, corrected_Z; //variables that store the angular speed taking into acount the offset 
 //Excel data
-const int NUMBER_OF_FIELDS = 1; // how many comma separated fields we expect
-int fieldIndex = 0;            // the current field being received
-double dummy[NUMBER_OF_FIELDS];   // array holding values for all the fields
-double serial_values[NUMBER_OF_FIELDS];
-int sign[NUMBER_OF_FIELDS];
 bool singleLoop = false;
 bool hardstop = true;
 
 //PID
 double currentSpeed, currentSpeed_abs, outputSpeed ,desiredSpeed,desiredSpeed2;
-double HP = 500, HI = 0.2, HD = 10;
+double displacement; //position variable
+double HP = 500, HI = 0.5, HD = 0;
 PID loadCompensator(&currentSpeed_abs, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 0; //keeps track if PID is on or off
-double displacement; //position variable
+
 void setup() 
 {
-  for(int i = 0; i < NUMBER_OF_FIELDS; i++)
-  {
-    sign[i] = 1;
-  }
-
   Serial.begin(SERIAL_PORT_SPEED); //from 9600 to 115200 - Ben
 
   pinMode(PWMS_INPUT, INPUT);
@@ -62,7 +56,8 @@ void setup()
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
   pinMode(22,OUTPUT);
-  //digitalWrite(22,HIGH);
+  pinMode(LED_BUILTIN,OUTPUT);
+  digitalWrite(22,HIGH);
   enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
   
@@ -76,17 +71,18 @@ void setup()
   //Checks for gyroscope - Ben
   if (!mpu.begin()) 
   {
-    Serial.println("Failed to find MPU6050 chip");
+    digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
     while (1) 
     {
       delay(10);
     }
   }
-  //Serial.println("MPU6050 Found!");
+  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
   //range settings - Ben
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  offsetSwitch(5);
 }
 
 void loop() 
@@ -94,58 +90,31 @@ void loop()
   while(singleLoop)
   {
     delay(1000);
-    desiredSpeed = abs(serial_values[0]);
     singleLoop = false;
   }
   //print sensor values - Ben
+  //gyrocheck();
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-
-  //Serial.print("Acceleration X: ");
-  //Serial.print(a.acceleration.x);
-  //Serial.print(", Y: ");
-  //Serial.print(a.acceleration.y);
-  //Serial.print(", Z: ");
-  //Serial.print(a.acceleration.z);
-  //Serial.println(" m/s^2");
-
-  //Serial.print("Rotation Y: ");
-  //Serial.println(g.gyro.y - Y_OFFSET);
-  //Serial.print(", Y: ");
-  //Serial.print(g.gyro.y);
-  //Serial.print(", Z: ");
-  //Serial.print(g.gyro.z);
-  //Serial.println(" rad/s");
-
-  //Serial.print("Temperature: ");
-  //Serial.print(temp.temperature);
-  //Serial.println(" degC");
   
   if(abs(g.gyro.y - Y_OFFSET) <= 0.05)//Sets the gyro value to 0 if it is below the threshold
   {
     //Serial.println("below threshold");
     corrected_Y = 0;
-    loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
     hardstop = true;
   }
   else
   {
     //Serial.println("above threshold");
     corrected_Y = g.gyro.y - Y_OFFSET;
-    loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
     hardstop = false;
   }
-  //PIDtoggle(hardstop);
+  
   pwm_read_values();
   desiredSpeed = abs(geometry(corrected_Y, displacement));
-  
   desiredSpeed2 = geometry(corrected_Y, displacement);
-//  if(hardstop == false)
-//  {
-//    desiredSpeed = 1; 
-//    desiredSpeed2 = desiredSpeed2/abs(desiredSpeed2);
-//  }
   Mdirection(corrected_Y);
+  PIDtoggle(hardstop);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
   Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
@@ -154,39 +123,6 @@ void loop()
   
 
 }
-void serialEvent() //Outputs data
-{
-  if(Serial.available() > 0)
-  {
-    char ch = Serial.read();
-    //Serial.println(ch);
-    if(ch >= '0' && ch <= '9')
-    {
-      dummy[fieldIndex] = (dummy[fieldIndex] * 10) + (ch - '0');
-      //Serial.println(dummy[fieldIndex]);
-    }
-    else if(ch == ',')
-    {
-      if(fieldIndex < (NUMBER_OF_FIELDS - 1))
-        fieldIndex++;
-    }
-    else if(ch == '-')
-      sign[fieldIndex] = -1;
-    else
-    {
-      for(int i = 0; i < NUMBER_OF_FIELDS; i++)
-      {
-        serial_values[i] = dummy[i]*sign[i];
-        dummy[i] = 0;
-        sign[i] = 1;
-      }
-      fieldIndex = 0;   
-      singleLoop = true;
-    } 
-    
-  }
-}
-
 void Mdirection(float dir)
 {
   if(dir > 0)
@@ -239,7 +175,7 @@ void calc_position() { calc_input(PWMP, PWMP_INPUT); }
 //the code below is going through testing
 void PIDtoggle(bool hardstop) 
 {
-  if(hardstop == true)
+  if(hardstop == true || displacement >= 7.5 || displacement <= 0.05)
   {
     loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
     mode = MANUAL;
@@ -251,4 +187,38 @@ void PIDtoggle(bool hardstop)
     mode = AUTOMATIC;
     digitalWrite(22,LOW);
   }
+}
+void offsetSwitch(int choice){
+    switch(choice){
+        case 1:
+            X_OFFSET = gyro1[1];
+            Y_OFFSET = gyro1[2];
+            Z_OFFSET = gyro1[3];
+        break;
+
+        case 2:
+            X_OFFSET = gyro2[1];
+            Y_OFFSET = gyro2[2];
+            Z_OFFSET = gyro2[3];
+        break;
+
+        case 3:
+            X_OFFSET = gyro3[1];
+            Y_OFFSET = gyro3[2];
+            Z_OFFSET = gyro3[3];
+        break;
+       
+        case 4:
+            X_OFFSET = gyro2[1];
+            Y_OFFSET = gyro2[2];
+            Z_OFFSET = gyro2[3];
+        break;
+
+        case 5:
+            X_OFFSET = gyro2[1];
+            Y_OFFSET = gyro2[2];
+            Z_OFFSET = gyro2[3];
+        break;
+
+    }
 }
