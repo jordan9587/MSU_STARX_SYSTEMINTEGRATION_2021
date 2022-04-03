@@ -24,6 +24,9 @@ const double gyro2[] = {-0.0919, 0.052, -0.019};
 const double gyro3[] = {-0.0511, -0.0076, -0.0019};
 const double gyro4[] = {-0.0588, -0.0185, -0.0298};
 const double gyro5[] = {-0.0231, -0.0526, -0.0486};
+const double gyro6[] = {-0.0254, -0.0077, -0.0045};
+const double gyro7[] = {-0.1019, -0.041, -0.0028};
+const double gyro8[] = {-0.0791, -0.027, -0.0346};
 //variable that holds the specific gyro offset
 double X_OFFSET = 0;
 double Y_OFFSET = 0;
@@ -33,7 +36,7 @@ uint32_t pwm_start[PWM_NUM]; // stores the time when PWM square wave begins
 uint16_t pwm_values[PWM_NUM]; //stores the width of the PWM pulse in microseconds
 volatile uint16_t pwm_shared[PWM_NUM]; //array used in the interrupt routine to hold the pulse width values
 
-Adafruit_MPU6050 mpu; //included - Ben
+Adafruit_MPU6050 mpu; //included
 double corrected_X, corrected_Y, corrected_Z; //variables that store the angular speed taking into acount the offset 
 //Excel data
 bool singleLoop = false;
@@ -48,7 +51,7 @@ int mode = 0; //keeps track if PID is on or off
 
 void setup() 
 {
-  Serial.begin(SERIAL_PORT_SPEED); //from 9600 to 115200 - Ben
+  Serial.begin(SERIAL_PORT_SPEED); //from 9600 to 115200
 
   pinMode(PWMS_INPUT, INPUT);
   pinMode(PWMP_INPUT, INPUT);
@@ -68,7 +71,7 @@ void setup()
   loadCompensator.SetOutputLimits(0,255);
   
   HorK(HIP);
-  //Checks for gyroscope - Ben
+  //Checks for gyroscope
   if (!mpu.begin()) 
   {
     digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
@@ -78,7 +81,7 @@ void setup()
     }
   }
   else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
-  //range settings - Ben
+  //range settings
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
@@ -92,7 +95,7 @@ void loop()
     delay(1000);
     singleLoop = false;
   }
-  //print sensor values - Ben
+  //print sensor values
   //gyrocheck();
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
