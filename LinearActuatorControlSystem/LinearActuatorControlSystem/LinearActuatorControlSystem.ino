@@ -46,6 +46,7 @@ void setup()
   desiredSpeed = 50;
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
+  HorK(KNEE);
 }
 
 void loop() 
