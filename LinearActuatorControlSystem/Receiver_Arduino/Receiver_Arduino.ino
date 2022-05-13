@@ -3,27 +3,33 @@
 #include <Wire.h>
 Adafruit_MPU6050 mpu;
 
-byte dataR[4]; //Initialized variable to store recieved data
-float parameter;
+const unsigned int MAX_MESSAGE_LENGTH = 36;
+static char message [MAX_MESSAGE_LENGTH];
+static unsigned int message_pos = 0;
+char inByte;
 void setup() 
 {
   // Begin the Serial at 9600 Baud
   
   Serial.begin(9600);
-  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   delay(100);
 }
 
 void loop() 
 {
-  Serial.readBytes(dataR,4); //Read the serial data and store in var
-  //memcpy(&parameter,dataR,4);
-  Serial.print(dataR[0]HEX);
-  Serial.print(dataR[1],HEX);
-  Serial.print(dataR[2],HEX);
-  Serial.println(dataR[3],HEX);
-  //Serial.println(parameter); //Print data on Serial Monitor
-  delay(1000);
+  while(Serial.available() > 0)
+  {
+    inByte = Serial.read();
+    if(inByte != '\n' && (message_pos < MAX_MESSAGE_LENGTH - 1))
+    {
+      message[message_pos] = inByte;
+      message_pos++;
+    }
+    else
+    {
+      message[message_pos] = '\0';
+      Serial.println(message);
+      message_pos = 0;
+    }
+  }
 }

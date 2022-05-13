@@ -2,9 +2,12 @@
 #include <Adafruit_Sensor.h>
 #include <Wire.h>
 Adafruit_MPU6050 mpu;
-floar f = 23.2;
-byte buf[4];
-void setup()
+
+float value;
+char buff[24];
+String myString = "";     // empty string
+
+void setup() 
 {
   Serial.begin(9600); //bit transfer rate (Bd) between PC and UNO
   pinMode(LED_BUILTIN,OUTPUT);
@@ -16,31 +19,38 @@ void setup()
       delay(10);
     }
   }
-  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
-  
-}
+  else  digitalWrite(LED_BUILTIN,LOW);
 
-void loop()
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
+  mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);  
+  float parameter = 0.1233; // floating number
+  myString.concat(parameter);
+  Serial.println(myString);
+  myString = String(parameter,6);
+  Serial.println(myString);
+  
+  
+  
+}//setup
+
+void loop() 
 {
-  SUART.write(0x12);  //sync pattern
-  SUART.write(0x34);
-  byte *ptr = (byte*)&data;
-  for (byte i = 0; i < 8; i++, ptr++)
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+  //----- Part 1: Send a float
+  value = g.gyro.y;
+  myString = String(value,6);
+  myString += '\n';
+  writeString(myString);
+  //Serial.println(myString);
+  
+}//loop
+
+void writeString(String stringData) { // Used to serially push out a String with Serial.write()
+
+  for (int i = 0; i < stringData.length(); i++)
   {
-    byte m = *ptr;
-    if (m < 0x10)
-    {
-      Serial.print('0');
-    }
-    Serial.print(m, HEX);
-    SUART.write(m);
-    CHKSUM += m;
+    Serial.write(stringData[i]);   // Push each char 1 by 1 on each loop pass
   }
-  CHKSUM = CHKSUM + 0x12 + 0x34;
-  SUART.write(CHKSUM);
-  Serial.println();
-  Serial.print("CHKSUM: "); Serial.println(CHKSUM, HEX);
-  CHKSUM = 0;
-  Serial.println("==================");
-  delay(1000);
-}
+}// end writeString
