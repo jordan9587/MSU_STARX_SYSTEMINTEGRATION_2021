@@ -6,7 +6,7 @@
 const float hipActMidMntAttchDist = 13;  // Distance from hip flexion joint to hip mid - mount attachment location
 const float hipActMidMntLen = 4;     //Distance from center of thigh segment to hip actuator mid - mount attachment(length of hip actuator mid - mount)
 const float hipActUpMntDist = 4;     //Distance to upper mount of hip actuator
-const float hipFlexJntDist = 5;      //Inferior Distance to Hip Flexion Joint
+const float hipFlexJntDist = 3.75;      //Inferior Distance to Hip Flexion Joint
 float hipActThetaFromNormal;
 
 
@@ -25,7 +25,7 @@ void HorK(bool mode)
 {
     HIPorKNEE = mode;
 }
-float geometry(float angularVel, float currentLength)
+float geometry(float angularVel, float currentLength, float HipAngVel)
 {
     if (HIPorKNEE == HIP)
     {
@@ -50,6 +50,7 @@ float geometry(float angularVel, float currentLength)
     else if (HIPorKNEE == KNEE)
     {
         currentLength = currentLength + actUnretractedLen;
+        angularVel = angularVel - HipAngVel;
         //angularVel = angularVel * PI / 180; this line caused issues with the output linearVelocity being too small
         theta[0] = 180 * (atan(kneeLwrMntDistFromKnee / kneeLwrMntDist)) / PI;
         len[0] = sqrt(pow(kneeUpMntDist, 2) + pow(kneeUpMntDistFromKnee, 2));
@@ -59,4 +60,8 @@ float geometry(float angularVel, float currentLength)
         linearVelocity = kneeLwrMntDist * angularVel / cos(PI * kneeActThetaFromNormal / 180);
         return linearVelocity;
     }
+}
+float geometry(float angularVel, float currentLength)
+{
+    geometry(angularVel, currentLength);
 }

@@ -39,7 +39,7 @@ bool hardstop = true;
 double currentSpeed, currentSpeed_abs, outputSpeed ,desiredSpeed,desiredSpeed2;
 double displacement; //position variable
 
-double HP = 50, HI = 20, HD = 60;
+double HP = 50, HI = 20, HD = 0;
 PID loadCompensator(&currentSpeed_abs, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 0; //keeps track if PID is on or off
 
@@ -92,7 +92,7 @@ void loop()
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   
-  if(abs(g.gyro.y - Y_OFFSET) <= 0.05)//Sets the gyro value to 0 if it is below the threshold
+  if(abs(g.gyro.y - Y_OFFSET) <= 0.08)//Sets the gyro value to 0 if it is below the threshold
   {
     //Serial.println("below threshold");
     corrected_Y = 0;
@@ -112,7 +112,7 @@ void loop()
   //PIDtoggle(hardstop);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
+  Serial.print(corrected_Y); Serial.print(","); Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
   //Serial.println(desiredSpeed2);
   //Serial.println(corrected_Y); 
   
