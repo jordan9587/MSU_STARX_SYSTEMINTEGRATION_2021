@@ -78,10 +78,10 @@ void setup()
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
 
   //PI Controller for sending to soft stop
-  //placed before as I will toggle the High Pin when turning off this PID
+  //placed here as I will toggle the High Pin when turning off this PID
   desired_Speed_stop = 0;
   StoppingPID.SetOutputLimits(0,255);
-  PIDtoggle(true) // turn off this PID
+  StopPID_status(true); // turn off this PID
   
   //PI Controller for load compensator
   pwm_read_values(); 
@@ -89,11 +89,6 @@ void setup()
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
 
-
-  
-
-  
-  
   HorK(HIP);
   //Checks for gyroscope
   if (!mpu.begin()) 
@@ -114,11 +109,8 @@ void setup()
 
 void loop() 
 {
-  while(singleLoop)
-  {
-    delay(1000);
-    singleLoop = false;
-  }
+
+ 
   //print sensor values
   //gyrocheck();
   sensors_event_t a, g, temp;
@@ -139,16 +131,11 @@ void loop()
   
   pwm_read_values();
   desiredSpeed = abs(geometry(corrected_Y, displacement));
-  desiredSpeed2 = geometry(corrected_Y, displacement);
+  desired_Speed_stop = geometry(corrected_Y, displacement);
   Mdirection(corrected_Y);
   //PIDtoggle(hardstop);
   loadCompensator.Compute();
   analogWrite(ANV, outputSpeed);
-  Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
-  //Serial.println(desiredSpeed2);
-  //Serial.println(corrected_Y); 
-  
-
 }
 void Mdirection(float dir)
 {
@@ -200,19 +187,35 @@ void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
 void calc_position() { calc_input(PWMP, PWMP_INPUT); }
 
 
+
+/*
+ * This function is used to turn the stopping PID on and off
+ *  IMPORTANT NOTE: This will also toggle the other PID on/off
+ */
+
 void StopPID_status(bool PID_off)
 {
+  
   if(PID_off)
   {
-        loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
-    mode = MANUAL;
+    StoppingPID.SetMode(MANUAL); //Manual - PI is deactivated
+    Stop_PID_status = MANUAL;
     digitalWrite(22,HIGH);
+
+    //turn other PID on
+    loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
+    mode = AUTOMATIC;
   }
   else
   {
-        loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
-    mode = AUTOMATIC;
+    StoppingPID.SetMode(AUTOMATIC);//Automatic - PI is activated
+    Stop_PID_status = AUTOMATIC;
     digitalWrite(22,LOW);
+
+    //turn other PID off
+    loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
+    mode = MANUAL;
+    digitalWrite(22,HIGH);
   }
 }
 
