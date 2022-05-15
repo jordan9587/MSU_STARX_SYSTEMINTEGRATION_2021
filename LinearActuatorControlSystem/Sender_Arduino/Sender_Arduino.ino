@@ -3,14 +3,19 @@
 #include <Wire.h>
 Adafruit_MPU6050 mpu;
 
-float value;
-char buff[24];
-String myString = "";     // empty string
-
-void setup() 
+union Onion
 {
-  Serial.begin(9600); //bit transfer rate (Bd) between PC and UNO
+    uint8_t     fBytes[sizeof( float )];
+    float       fValue;
+};
+
+Onion flt;
+
+void setup( void )
+{
+  Serial.begin(9600);
   pinMode(LED_BUILTIN,OUTPUT);
+  while( !Serial );
   if (!mpu.begin()) 
   {
     digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
@@ -19,38 +24,23 @@ void setup()
       delay(10);
     }
   }
-  else  digitalWrite(LED_BUILTIN,LOW);
-
+  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
-  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);  
-  float parameter = 0.1233; // floating number
-  myString.concat(parameter);
-  Serial.println(myString);
-  myString = String(parameter,6);
-  Serial.println(myString);
-  
-  
-  
+  mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  flt.fValue = 1234.5678;
+
+    
 }//setup
 
-void loop() 
+void loop( void )
 {
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
-  //----- Part 1: Send a float
-  value = g.gyro.y;
-  myString = String(value,6);
-  myString += '\n';
-  writeString(myString);
-  //Serial.println(myString);
-  
+  flt.fValue = g.gyro.y;
+  Serial.write( '>' );
+  Serial.write( flt.fBytes, sizeof( float ) );
+  Serial.write( '<' );
+  //delay(1000);
+    
 }//loop
-
-void writeString(String stringData) { // Used to serially push out a String with Serial.write()
-
-  for (int i = 0; i < stringData.length(); i++)
-  {
-    Serial.write(stringData[i]);   // Push each char 1 by 1 on each loop pass
-  }
-}// end writeString
