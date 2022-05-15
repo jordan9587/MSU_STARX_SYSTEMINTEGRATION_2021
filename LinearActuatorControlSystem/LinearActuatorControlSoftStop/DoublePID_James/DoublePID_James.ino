@@ -49,12 +49,18 @@ double HP = 50, HI = 20, HD = 60;
 PID loadCompensator(&currentSpeed_abs, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
 int mode = 0; //keeps track if PID is on or off
 
+/*
+PID_stop
 
-//PID_stop
-double currentSpeed_stop, Speed_abs_stop, output_Speed_stop ,desired_Speed_stop;
-double displacement_forStop; //position variable
-double HP_stop = 50, HI_stop = 20, HD_stop = 60;
-PID StoppingPID(&Speed_abs_stop, &output_Speed_stop ,&desired_Speed_stop, HP, HI, HD,P_ON_M, DIRECT);
+This PID is needed as this PID goes by displacment inside of speed
+*/
+double setpoint = 3.75;   //the point that is considered to standing postion
+double HP_stop = 50, HI_stop = 20, HD_stop = 60;  //these are the parameters to the PID
+
+#define to_standing_pin 50  // pin that the button is connected too
+const int seconds = 5;      // time delay after moving to standing before resuming
+
+PID StoppingPID(&displacement, &currentSpeed ,&setpoint, HP, HI, HD,P_ON_M, DIRECT);
 int Stop_PID_status = 0; //keeps track if PID is on or off
 
 
@@ -79,7 +85,6 @@ void setup()
 
   //PI Controller for sending to soft stop
   //placed here as I will toggle the High Pin when turning off this PID
-  desired_Speed_stop = 0;
   StoppingPID.SetOutputLimits(0,255);
   StopPID_status(true); // turn off this PID
   
@@ -131,10 +136,66 @@ void loop()
   
   pwm_read_values();
   desiredSpeed = abs(geometry(corrected_Y, displacement));
-  desired_Speed_stop = geometry(corrected_Y, displacement);
-  Mdirection(corrected_Y);
-  //PIDtoggle(hardstop);
-  loadCompensator.Compute();
+
+
+//////////////////////// TO standing implementation
+  if(!(digitalRead(to_standing_pin)))
+  {
+    pwm_read_values();
+    StopPID_status(false); // turn the PID on
+
+
+    //print for testing purposes
+    Serial.println(".....Begin Move to Standing.....");
+    String message = "Understood to be at distance " + String(displacement) +" Setpoint is : " + String(setpoint);
+    Serial.println(message);
+
+
+    //given a 20% range within the setpoint
+    while(displacement >= setpoint*.1 || displacement <= setpoint*.9)
+    {
+      //collect the current actuator speed and displacement
+      pwm_read_values();  // this will update current speed and the displacment
+
+      //determine movement dirrection
+      if(displacement > setpoint)
+      {
+        Serial.println("Moving negative");
+        Mdirection(-1); 
+      }
+      else if (displacement < setpoint)
+      {
+         Serial.println("Moving postive");
+         Mdirection(1);
+      }
+      else
+      {
+        Serial.println("withing tolerance");
+        Mdirection(0);
+        break;
+      }
+
+      //compute the displacement with the PID
+      StoppingPID.Compute(); 
+
+      
+      //write the PID result to the actuator
+      analogWrite(ANV, outputSpeed);
+    }
+     
+    Serial.println("Pause for durration");
+    delay(seconds*1000);
+    Serial.println(".....resuming System.....");
+    StopPID_status(true);
+  }
+  
+  
+
+////////////////////////
+
+  desiredSpeed = geometry(corrected_Y, displacement); //determine the speed from angularVelocity and Current postion
+  Mdirection(corrected_Y);  //set the dirrection for the actuator movemnt (postitive or negative)
+  loadCompensator.Compute();  
   analogWrite(ANV, outputSpeed);
 }
 void Mdirection(float dir)
