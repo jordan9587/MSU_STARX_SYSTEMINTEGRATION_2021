@@ -3,33 +3,57 @@
 #include <Wire.h>
 Adafruit_MPU6050 mpu;
 
-const unsigned int MAX_MESSAGE_LENGTH = 36;
-static char message [MAX_MESSAGE_LENGTH];
-static unsigned int message_pos = 0;
-char inByte;
-void setup() 
+union Onion
 {
-  // Begin the Serial at 9600 Baud
-  
-  Serial.begin(9600);
-  delay(100);
-}
+    uint8_t     fBytes[sizeof( float )];
+    float       fValue;
+};
 
-void loop() 
+Onion flt;
+
+void setup( void )
 {
-  while(Serial.available() > 0)
-  {
-    inByte = Serial.read();
-    if(inByte != '\n' && (message_pos < MAX_MESSAGE_LENGTH - 1))
+    Serial.begin(9600);
+    while( !Serial );
+    
+}//setup
+
+void loop( void )
+{
+    byte
+        ch,
+        idx;
+    bool
+        done;
+        
+    if( Serial.available() > 0 )
     {
-      message[message_pos] = inByte;
-      message_pos++;
-    }
-    else
-    {
-      message[message_pos] = '\0';
-      Serial.println(message);
-      message_pos = 0;
-    }
-  }
-}
+        if( Serial.read() == '>' )
+        {
+            done = false;
+            idx = 0;
+            while( !done )
+            {
+                if( Serial.available() > 0 )
+                {
+                    ch = Serial.read();
+                    if( ch == '<' )
+                        done = true;
+                    else
+                    {
+                        if( idx < sizeof( float ) )
+                            flt.fBytes[idx++] = ch;
+                        
+                    }//else
+                
+                }//if
+                   
+            }//while
+
+            Serial.print( "Float value received: " ); Serial.println( flt.fValue, 4 );
+            
+        }//if
+        
+    }//if
+    
+}//loop
