@@ -63,5 +63,5 @@ float geometry(float angularVel, float currentLength, float HipAngVel)
 }
 float geometry(float angularVel, float currentLength)
 {
-    geometry(angularVel, currentLength);
+    geometry(angularVel, currentLength,0);
 }

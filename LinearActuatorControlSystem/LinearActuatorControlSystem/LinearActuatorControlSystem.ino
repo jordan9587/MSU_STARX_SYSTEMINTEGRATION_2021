@@ -104,13 +104,20 @@ void loop()
     corrected_Y = g.gyro.y - Y_OFFSET;
     hardstop = false;
   }
-  
+  Serial.println("HOLA");
   pwm_read_values();
-  desiredSpeed = abs(geometry(corrected_Y, displacement));
-  desiredSpeed2 = geometry(corrected_Y, displacement);
+  
+  //desiredSpeed = abs(geometry(corrected_Y, displacement));
+  
+  //desiredSpeed2 = geometry(corrected_Y, displacement);
+  desiredSpeed = 5;
+  desiredSpeed2 = 5;
+  Serial.println("CHAU");
   Mdirection(corrected_Y);
+  
   //PIDtoggle(hardstop);
   loadCompensator.Compute();
+  
   analogWrite(ANV, outputSpeed);
   Serial.print(corrected_Y); Serial.print(","); Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
   //Serial.println(desiredSpeed2);

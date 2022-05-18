@@ -57,7 +57,7 @@ This PID is needed as this PID goes by displacment inside of speed
 double setpoint = 3.75;   //the point that is considered to standing postion
 double HP_stop = 50, HI_stop = 20, HD_stop = 60;  //these are the parameters to the PID
 
-#define to_standing_pin 50  // pin that the button is connected too
+#define to_standing_pin 53  // pin that the button is connected too
 const int seconds = 5;      // time delay after moving to standing before resuming
 
 PID StoppingPID(&displacement, &currentSpeed ,&setpoint, HP, HI, HD,P_ON_M, DIRECT);
@@ -82,7 +82,6 @@ void setup()
   digitalWrite(22,HIGH);
   enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
-
   //PI Controller for sending to soft stop
   //placed here as I will toggle the High Pin when turning off this PID
   StoppingPID.SetOutputLimits(0,255);
@@ -110,6 +109,7 @@ void setup()
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
   offsetSwitch(5);
+  Serial.println("end of setup");
 }
 
 void loop() 
@@ -123,24 +123,25 @@ void loop()
   
   if(abs(g.gyro.y - Y_OFFSET) <= 0.05)//Sets the gyro value to 0 if it is below the threshold
   {
-    //Serial.println("below threshold");
+    Serial.println("below threshold");
     corrected_Y = 0;
     hardstop = true;
   }
   else
   {
-    //Serial.println("above threshold");
+    Serial.println("above threshold");
     corrected_Y = g.gyro.y - Y_OFFSET;
     hardstop = false;
   }
   
-  pwm_read_values();
-  desiredSpeed = abs(geometry(corrected_Y, displacement));
-
+  //pwm_read_values();
+  //desiredSpeed = abs(geometry(corrected_Y, displacement));
+  Serial.println(corrected_Y);
 
 //////////////////////// TO standing implementation
   if(!(digitalRead(to_standing_pin)))
   {
+    Serial.println("entered if statment");
     pwm_read_values();
     StopPID_status(false); // turn the PID on
 
@@ -192,25 +193,25 @@ void loop()
   
 
 ////////////////////////
-
   desiredSpeed = geometry(corrected_Y, displacement); //determine the speed from angularVelocity and Current postion
   Mdirection(corrected_Y);  //set the dirrection for the actuator movemnt (postitive or negative)
   loadCompensator.Compute();  
   analogWrite(ANV, outputSpeed);
+  Serial.println("after if statement");
 }
 void Mdirection(float dir)
 {
   if(dir > 0)
   {
     //extend
-    digitalWrite(IN1, HIGH);
-    digitalWrite(IN2, LOW);
+    digitalWrite(IN1, LOW);
+    digitalWrite(IN2, HIGH);
   }
   else if(dir < 0)
   {
     //retract
-    digitalWrite(IN1, LOW);
-    digitalWrite(IN2, HIGH);
+    digitalWrite(IN1, HIGH);
+    digitalWrite(IN2, LOW);
   }
   else
   {
@@ -246,8 +247,6 @@ void calc_input(uint8_t channel, uint8_t input_pin) //Does the math for the PWM 
 }
 void calc_speed() { calc_input(PWMS, PWMS_INPUT); }
 void calc_position() { calc_input(PWMP, PWMP_INPUT); }
-
-
 
 /*
  * This function is used to turn the stopping PID on and off
