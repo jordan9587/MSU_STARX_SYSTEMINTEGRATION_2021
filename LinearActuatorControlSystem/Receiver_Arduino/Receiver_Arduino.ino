@@ -21,7 +21,7 @@ void setup( void )
 void loop( void )
 {
     byte
-        ch,
+        ch, 
         idx;
     bool
         done;

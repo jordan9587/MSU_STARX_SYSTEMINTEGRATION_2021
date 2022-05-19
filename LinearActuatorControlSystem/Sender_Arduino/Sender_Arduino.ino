@@ -28,7 +28,6 @@ void setup( void )
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  flt.fValue = 1234.5678;
 
     
 }//setup

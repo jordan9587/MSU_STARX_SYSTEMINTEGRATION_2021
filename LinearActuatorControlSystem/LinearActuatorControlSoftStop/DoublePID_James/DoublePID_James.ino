@@ -55,7 +55,6 @@ This PID is needed as this PID goes by displacment instead of speed
 double to_standing_error;
 double setpoint = 3.75;   //the point that is considered to standing postion in inches
 double HP_stop = 50, HI_stop = 20, HD_stop = 0;  //these are the parameters to the PID
-const int seconds = 1;      // time delay after moving to standing before resuming
 PID StoppingPID(&displacement, &outputSpeed ,&setpoint, HP_stop, HI_stop, HD_stop,P_ON_M, DIRECT);
 bool to_standing_status = false; //keeps track if PID is on or off
 
@@ -81,7 +80,7 @@ void setup()
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
   //PI Controller for sending to soft stop
   //placed here as I will toggle the High Pin when turning off this PID
-  StoppingPID.SetMode(AUTOMATIC);
+  StoppingPID.SetMode(MANUAL);
   StoppingPID.SetOutputLimits(0,255);
   StopPID_status(true); // turn off this PID
   
@@ -124,7 +123,7 @@ void loop()
   Mdirection(corrected_Y);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
-  Serial.println(currentSpeed);Serial.println("   ");Serial.println(desiredSpeed);
+  Serial.print(corrected_Y);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
 
 //////////////////////// TO standing implementation
   if((digitalRead(TO_STANDING))) toStanding();
@@ -139,7 +138,6 @@ void toStanding()
   Serial.println(".....Begin Move to Standing.....");
   String message = "Understood to be at distance " + String(displacement) +" Setpoint is : " + String(setpoint);
   Serial.println(message);
-  pwm_read_values();
   to_standing_error = setpoint-displacement;
   //given 0.2 inch error within the setpoint
   while(abs(to_standing_error)>0.2)
@@ -156,7 +154,7 @@ void toStanding()
    }
    Mdirection(0);
    Serial.println("Pause for durration");
-   delay(seconds*500);
+   delay(500);
    Serial.println(".....resuming System.....");
    loadCompensator.SetMode(AUTOMATIC);
    StoppingPID.SetMode(MANUAL);
@@ -165,7 +163,7 @@ void toStanding()
    {
     if(digitalRead(TO_STANDING))lock_in_place = false;
    }
-   delay(seconds*500);
+   delay(500);
 }
 void Mdirection(float dir)
 {

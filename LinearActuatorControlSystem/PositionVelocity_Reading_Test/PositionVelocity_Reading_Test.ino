@@ -61,7 +61,7 @@ void loop()
     pwm_read_values();
     velocity = pwm_values[PWMS] - 510;
     delay(500);
-    Mdirection(0);
+    //Mdirection(0);
     delay(500);
     pwm_read_values();
     d2 = pwm_values[PWMP];
