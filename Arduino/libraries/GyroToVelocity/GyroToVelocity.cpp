@@ -3,7 +3,7 @@
 
 
 //Suit dimensions in inches
-const float hipActMidMntAttchDist = 13;  // Distance from hip flexion joint to hip mid - mount attachment location
+const float hipActMidMntAttchDist = 14.5;  // Distance from hip flexion joint to hip mid - mount attachment location
 const float hipActMidMntLen = 4;     //Distance from center of thigh segment to hip actuator mid - mount attachment(length of hip actuator mid - mount)
 const float hipActUpMntDist = 4;     //Distance to upper mount of hip actuator
 const float hipFlexJntDist = 3.75;      //Inferior Distance to Hip Flexion Joint
@@ -12,8 +12,8 @@ float hipActThetaFromNormal;
 
 const float kneeLwrMntDist = 4;            // Distance from center of leg segment to actuator attachment
 const float kneeUpMntDist = 2.5;         //Distance from center of leg segment to actuator attachment
-const float kneeLwrMntDistFromKnee = 3;        //Distance along the suit leg from knee to lower mount(on shank)
-const float kneeUpMntDistFromKnee = 14.5;      // Distance along the suit leg from knee to upper mount(on thigh)
+const float kneeLwrMntDistFromKnee = 4;        //Distance along the suit leg from knee to lower mount(on shank)
+const float kneeUpMntDistFromKnee = 15.5;      // Distance along the suit leg from knee to upper mount(on thigh)
 float kneeActThetaFromNormal;
 
 const float actUnretractedLen = 12.14;

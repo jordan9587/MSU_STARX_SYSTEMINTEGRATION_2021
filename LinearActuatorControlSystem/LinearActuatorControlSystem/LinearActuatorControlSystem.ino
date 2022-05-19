@@ -4,6 +4,7 @@
 #include <Adafruit_Sensor.h>  //library to run adafruit sensors
 #include <Wire.h>   //library that enables serail communications
 #include <GyroToVelocity.h>   //geometry functions for HIP and KNEE actuators
+
 #define SERIAL_PORT_SPEED 9600 
 #define PWM_NUM  2 //number of PWM signals
 #define PWMS  0 //speed is stored in the 0 position of the array
@@ -104,23 +105,18 @@ void loop()
     corrected_Y = g.gyro.y - Y_OFFSET;
     hardstop = false;
   }
-  Serial.println("HOLA");
   pwm_read_values();
-  
-  //desiredSpeed = abs(geometry(corrected_Y, displacement));
-  
-  //desiredSpeed2 = geometry(corrected_Y, displacement);
-  desiredSpeed = 5;
-  desiredSpeed2 = 5;
-  Serial.println("CHAU");
+  //desiredSpeed = 5;
+  desiredSpeed = abs(geometry(corrected_Y, displacement,0));
+  desiredSpeed2 = geometry(corrected_Y, displacement,0);
   Mdirection(corrected_Y);
   
   //PIDtoggle(hardstop);
   loadCompensator.Compute();
   
   analogWrite(ANV, outputSpeed);
-  Serial.print(corrected_Y); Serial.print(","); Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
-  //Serial.println(desiredSpeed2);
+  //Serial.print(outputSpeed);Serial.print("  ");Serial.print(corrected_Y); Serial.print(","); Serial.print(desiredSpeed2); Serial.print(","); Serial.println(currentSpeed); //Serial.print(","); Serial.print(displacement); Serial.print(","); Serial.println(corrected_Y);
+  Serial.print(displacement); Serial.print("   ");Serial.println(desiredSpeed);
   //Serial.println(corrected_Y); 
   
 }
@@ -152,6 +148,10 @@ void pwm_read_values()
   currentSpeed = ((double)(pwm_values[PWMS] - 510)/26+1/13); //calculates the real value [inch/sec] for the actuator speed
   currentSpeed_abs = abs(currentSpeed);
   displacement = abs(7.5 / 990 * pwm_values[PWMP] - 7.5); //calculates the real value [inch] for the actuator position
+  if(displacement > 7.5)
+  {
+    displacement = 7.5;
+  }
 }
 void calc_input(uint8_t channel, uint8_t input_pin) //Does the math for the PWM data
 {

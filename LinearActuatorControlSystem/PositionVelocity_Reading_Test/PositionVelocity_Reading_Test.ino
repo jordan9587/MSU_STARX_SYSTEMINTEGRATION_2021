@@ -83,7 +83,7 @@ void loop()
     analogWrite(ANV,abs(serial_values[0]));
     pwm_read_values();
     velocity = pwm_values[PWMS] -510;
-    Serial.print(velocity); Serial.print(","); Serial.println(pwm_values[PWMP]);
+    Serial.print(velocity); Serial.print(","); Serial.println(displacement);
     singleLoop = false;
   }
 }
@@ -150,8 +150,8 @@ void pwm_read_values()
   noInterrupts();
   memcpy(pwm_values, (const void *)pwm_shared, sizeof(pwm_shared));
   interrupts();
-//  velocity = (1/26)*(pwm_values[PWMS] - 510) + 1/13;
-//  displacement = 7.5 / 990 * pwm_values[PWMP] - 7.5;
+  velocity = (1/26)*(pwm_values[PWMS] - 510) + 1/13;
+  displacement = 7.5 / 990 * pwm_values[PWMP] - 7.5;
 }
 
 void calc_input(uint8_t channel, uint8_t input_pin) 
