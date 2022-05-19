@@ -69,13 +69,13 @@ maxTorq = 10000
 mtMin = 8000
 
 # Max speed in trajectory commands, toggle, or preset position mode
-maxSpeed = 3000000
+maxSpeed = 4294967
 
 # Min value for speed in toggle mode with analog speed control
 msMin = 200000
 
 # Acceleration rate for trajectory commands, toggle, or preset position mode
-accel = 5000
+accel = 25770
 
 # Toggle mode "stop" setting
 # 0 = snap to position
@@ -92,7 +92,7 @@ pFilter = 3000
 
 # Analog voltage input range (use unit converter): 
 vMin = 33114 # ~0V
-vMax = 48258 # ~5V
+vMax = 43109 # ~5V
 
 # Analog voltage filter (lower = more filtration):
 vFilter = 200
@@ -129,10 +129,10 @@ Pos4 = 9216
 # DIO1 Config
 ioPin1 = 4
 ioBit1 = 0
-ioPWM1 = 0
+ioPWM1 = 1
 
 # DIO2 Config
-ioPin2 = 0
+ioPin2 = 4
 ioBit2 = 0
 ioPWM2 = 0
 
