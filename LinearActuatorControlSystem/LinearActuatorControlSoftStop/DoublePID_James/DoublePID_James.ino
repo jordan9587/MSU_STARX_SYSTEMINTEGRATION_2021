@@ -1,10 +1,11 @@
+//Libraries
 #include <PID_v1.h>     //PID library
 #include <EnableInterrupt.h>  //library that enables to read pwm values
 #include <Adafruit_MPU6050.h> //gyro library
 #include <Adafruit_Sensor.h>  //library to run adafruit sensors
 #include <Wire.h>   //library that enables serail communications
 #include <GyroToVelocity.h>   //geometry functions for HIP and KNEE actuators
-
+//Serial port baud and Arduino pins
 #define SERIAL_PORT_SPEED 9600 
 #define PWM_NUM  2 //number of PWM signals
 #define PWMS  0 //speed is stored in the 0 position of the array
@@ -14,8 +15,8 @@
 #define ANV 5 //analog voltage speed control pin
 #define IN1 2 //direction of actuation
 #define IN2 3 //direction of actuation
-
-//zero rate offset in radions/s
+#define TO_STANDING 53
+//zero rate offset in radians/s
 //recalibrate gyros periodically, probably once a month or before testing
 const double gyro1[] = {-0.0213, -0.0192, -0.03};
 const double gyro2[] = {-0.0919, 0.052, -0.019};
@@ -29,57 +30,53 @@ const double gyro8[] = {-0.0791, -0.027, -0.0346};
 double X_OFFSET = 0;
 double Y_OFFSET = 0;
 double Z_OFFSET = 0;
-
+//interrupt arrays
 uint32_t pwm_start[PWM_NUM]; // stores the time when PWM square wave begins
 uint16_t pwm_values[PWM_NUM]; //stores the width of the PWM pulse in microseconds
 volatile uint16_t pwm_shared[PWM_NUM]; //array used in the interrupt routine to hold the pulse width values
 
-Adafruit_MPU6050 mpu; //included
-double corrected_X, corrected_Y, corrected_Z; //variables that store the angular speed taking into acount the offset 
-//Excel data
+Adafruit_MPU6050 mpu; //gyro sensor
+double corrected_X, corrected_Y, corrected_Z; //variables that store the angular speed after the offset has been applied
+
 bool lock_in_place = false;
-bool hardstop = true;
 
 //PID_runtime
 double currentSpeed, currentSpeed_abs, outputSpeed ,desiredSpeed, desiredSpeed2;
 double displacement; //position variable
 double HP = 50, HI = 20, HD = 0;
 PID loadCompensator(&currentSpeed_abs, &outputSpeed ,&desiredSpeed, HP, HI, HD,P_ON_M, DIRECT);
-int mode = 0; //keeps track if PID is on or off
+bool runtime_status = true; //keeps track if PID is on or off
 
 /*
 PID_stop
 
-This PID is needed as this PID goes by displacment inside of speed
+This PID is needed as this PID goes by displacment instead of speed
 */
-double error;
-double setpoint = 3.75;   //the point that is considered to standing postion
+double to_standing_error;
+double setpoint = 3.75;   //the point that is considered to standing postion in inches
 double HP_stop = 50, HI_stop = 20, HD_stop = 0;  //these are the parameters to the PID
-
-#define to_standing_pin 53  // pin that the button is connected too
 const int seconds = 1;      // time delay after moving to standing before resuming
-
 PID StoppingPID(&displacement, &outputSpeed ,&setpoint, HP_stop, HI_stop, HD_stop,P_ON_M, DIRECT);
-int Stop_PID_status = 0; //keeps track if PID is on or off
-
-
+bool to_standing_status = false; //keeps track if PID is on or off
 
 void setup() 
 {
-  //begin serial plotter
+  //begin serial monitor
   Serial.begin(SERIAL_PORT_SPEED); //from 9600 to 115200
 
 
-  //establish all pins
+  //establish all pins I/O
   pinMode(PWMS_INPUT, INPUT);
   pinMode(PWMP_INPUT, INPUT);
-  pinMode(to_standing_pin,INPUT);
+  pinMode(TO_STANDING,INPUT);
   pinMode(ANV,OUTPUT);
   pinMode(IN1,OUTPUT);
   pinMode(IN2,OUTPUT);
-  pinMode(22,OUTPUT);
+  pinMode(22,OUTPUT); //dummy pin
   pinMode(LED_BUILTIN,OUTPUT);
-  digitalWrite(22,HIGH);
+  digitalWrite(22,HIGH); //always HIGH
+
+  //interrupts used to read the linear actuator feedback
   enableInterrupt(PWMS_INPUT, calc_speed, CHANGE);
   enableInterrupt(PWMP_INPUT, calc_position, CHANGE); 
   //PI Controller for sending to soft stop
@@ -94,7 +91,7 @@ void setup()
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
 
-  HorK(HIP);
+  HorK(HIP); //Hip or Knee geometry
   //Checks for gyroscope
   if (!mpu.begin()) 
   {
@@ -109,31 +106,17 @@ void setup()
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  offsetSwitch(5);
-  Serial.println("end of setup");
+  offsetSwitch(5); //Check the gyro number connected to the arduino
 }
 
 void loop() 
 {
-  Serial.println("loop");
-  StopPID_status(true);
-  //print sensor values
-  //gyrocheck();
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   
-  if(abs(g.gyro.y - Y_OFFSET) <= 0.08)//Sets the gyro value to 0 if it is below the threshold
-  {
-    //Serial.println("below threshold");
-    corrected_Y = 0;
-    hardstop = true;
-  }
-  else
-  {
-    //Serial.println("above threshold");
-    corrected_Y = g.gyro.y - Y_OFFSET;
-    hardstop = false;
-  }
+  //Sets the gyro value to 0 if it is below the threshold
+  if(abs(g.gyro.y - Y_OFFSET) <= 0.08)  corrected_Y = 0;
+  else  corrected_Y = g.gyro.y - Y_OFFSET;   
   
   pwm_read_values();
   desiredSpeed = abs(geometry(corrected_Y, displacement));
@@ -141,55 +124,48 @@ void loop()
   Mdirection(corrected_Y);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
-  Serial.println(corrected_Y);
+  Serial.println(currentSpeed);Serial.println("   ");Serial.println(desiredSpeed);
 
 //////////////////////// TO standing implementation
-  if((digitalRead(to_standing_pin)))
-  {
-    loadCompensator.SetMode(MANUAL);
-    StoppingPID.SetMode(AUTOMATIC);
-    Serial.println("entered if statment");
-    pwm_read_values();
-    //StopPID_status(false); // turn the PID on
-
-
-    //print for testing purposes
-    Serial.println(".....Begin Move to Standing.....");
-    String message = "Understood to be at distance " + String(displacement) +" Setpoint is : " + String(setpoint);
-    Serial.println(message);
-    pwm_read_values();
-    error = setpoint-displacement;
-    
-    //given a 20% range within the setpoint
-    while(abs(error)>0.2)
-    {
-     //collect the current actuator speed and displacement
-     pwm_read_values();  // this will update current speed and the displacment
-     //compute the displacement with the PID
-     error = setpoint - displacement;
-     Serial.println(error);
-     Mdirection(error);
-     StoppingPID.Compute(); 
-     //write the PID result to the actuator
-     analogWrite(ANV, outputSpeed);
-    }
-    Mdirection(0);
-    Serial.println("Pause for durration");
-    delay(seconds*500);
-    Serial.println(".....resuming System.....");
-    loadCompensator.SetMode(AUTOMATIC);
-    StoppingPID.SetMode(MANUAL);
-    lock_in_place = true;
-    while(lock_in_place)
-    {
-      if((digitalRead(to_standing_pin))){lock_in_place = false;}
-    }
-    delay(seconds*500);
-  }
-  
-  
-
+  if((digitalRead(TO_STANDING))) toStanding();
 ////////////////////////
+}
+void toStanding()
+{
+  loadCompensator.SetMode(MANUAL);
+  StoppingPID.SetMode(AUTOMATIC);
+  pwm_read_values();
+  
+  Serial.println(".....Begin Move to Standing.....");
+  String message = "Understood to be at distance " + String(displacement) +" Setpoint is : " + String(setpoint);
+  Serial.println(message);
+  pwm_read_values();
+  to_standing_error = setpoint-displacement;
+  //given 0.2 inch error within the setpoint
+  while(abs(to_standing_error)>0.2)
+  {
+    //collect the current actuator speed and displacement
+    pwm_read_values();  // this will update current speed and the displacment
+    //compute the displacement with the PID
+    to_standing_error = setpoint - displacement;
+    Serial.println(to_standing_error);
+    Mdirection(to_standing_error);
+    StoppingPID.Compute(); 
+    //write the PID result to the actuator
+    analogWrite(ANV, outputSpeed);
+   }
+   Mdirection(0);
+   Serial.println("Pause for durration");
+   delay(seconds*500);
+   Serial.println(".....resuming System.....");
+   loadCompensator.SetMode(AUTOMATIC);
+   StoppingPID.SetMode(MANUAL);
+   lock_in_place = true;
+   while(lock_in_place)
+   {
+    if(digitalRead(TO_STANDING))lock_in_place = false;
+   }
+   delay(seconds*500);
 }
 void Mdirection(float dir)
 {
@@ -252,23 +228,20 @@ void StopPID_status(bool PID_off)
   if(PID_off)
   {
     StoppingPID.SetMode(MANUAL); //Manual - PI is deactivated
-    Stop_PID_status = MANUAL;
-    digitalWrite(22,HIGH);
-
+    to_standing_status = MANUAL;
+    
     //turn other PID on
     loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
-    mode = AUTOMATIC;
+    runtime_status = AUTOMATIC;
   }
   else
   {
     StoppingPID.SetMode(AUTOMATIC);//Automatic - PI is activated
-    Stop_PID_status = AUTOMATIC;
-    digitalWrite(22,LOW);
+    to_standing_status = AUTOMATIC;
 
     //turn other PID off
     loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
-    mode = MANUAL;
-    digitalWrite(22,HIGH);
+    runtime_status = MANUAL;
   }
 }
 
@@ -279,18 +252,20 @@ void PIDtoggle(bool hardstop)
   if(hardstop == true || displacement >= 7.5 || displacement <= 0.05)
   {
     loadCompensator.SetMode(MANUAL); //Manual - PI is deactivated
-    mode = MANUAL;
+    runtime_status = MANUAL;
     digitalWrite(22,HIGH);
   }
   else
   {
     loadCompensator.SetMode(AUTOMATIC);//Automatic - PI is activated
-    mode = AUTOMATIC;
+    runtime_status = AUTOMATIC;
     digitalWrite(22,LOW);
   }
 }
-void offsetSwitch(int choice){
-    switch(choice){
+void offsetSwitch(int choice)
+{
+    switch(choice)
+    {
         case 1:
             X_OFFSET = gyro1[1];
             Y_OFFSET = gyro1[2];
