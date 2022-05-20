@@ -10,7 +10,7 @@ union Onion
 };
 
 Onion flt;
-
+float hip_ang_vel_x;
 void setup( void )
 {
     Serial.begin(9600);
@@ -20,40 +20,50 @@ void setup( void )
 
 void loop( void )
 {
-    byte
-        ch, 
-        idx;
-    bool
-        done;
+  hip_ang_vel_x = Receive();
+  Serial.println(hip_ang_vel_x);
+    
+    
+}//loop
+float Receive()
+{
+  byte ch, ch1, idx;
+  bool done;
+  float dummy;
         
     if( Serial.available() > 0 )
     {
         if( Serial.read() == '>' )
         {
-            done = false;
-            idx = 0;
-            while( !done )
+          done = false;
+          idx = 0;
+          while( !done )
+          {
+            if( Serial.available() > 0 )
             {
-                if( Serial.available() > 0 )
-                {
-                    ch = Serial.read();
-                    if( ch == '<' )
-                        done = true;
-                    else
-                    {
-                        if( idx < sizeof( float ) )
+              ch = Serial.read();
+              if( ch == '<' )
+              done = true;
+              else
+              {
+                if( idx < sizeof( float ) )
                             flt.fBytes[idx++] = ch;
-                        
-                    }//else
-                
-                }//if
+              }//else
+            }//if
                    
-            }//while
-
-            Serial.print( "Float value received: " ); Serial.println( flt.fValue, 4 );
+          }//while
+          //Serial.print( "Float value received: " ); Serial.println( flt.fValue, 4 );
             
         }//if
         
     }//if
-    
-}//loop
+    if(flt.fValue > -9 && flt.fValue <9)
+    {
+      dummy = flt.fValue; 
+      return flt.fValue;
+    }
+    else
+    {
+      return dummy;
+    }
+}

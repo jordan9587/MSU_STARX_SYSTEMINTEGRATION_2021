@@ -40,12 +40,12 @@ Adafruit_MPU6050 mpu2;
 float x_val1, y_val1, z_val1, result1;
 float x_square1, y_square1, z_square1;
 float accel_angle_x1, accel_angle_y1;
-sensors_event_t a1, g1, temp1;
+
 
 float x_val2, y_val2, z_val2, result2;
 float x_square2, y_square2, z_square2;
 float accel_angle_x2, accel_angle_y2;
-sensors_event_t a2, g2, temp2;
+
 
 float accel_center_x = 0.66;
 float accel_center_y = -0.12;
@@ -109,7 +109,6 @@ void setup()
   desiredSpeed = 0;
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
-
   tiltPID.SetMode(AUTOMATIC);
   tiltPID.SetOutputLimits(0,255);
   HorK(HIP); //Hip or Knee geometry
@@ -121,7 +120,18 @@ void setup()
 
 void loop() 
 {
-  tilt();
+  sensors_event_t a1, g1, temp1;
+  sensors_event_t a2, g2, temp2;
+  mpu1.getEvent(&a1, &g1, &temp1);
+  mpu2.getEvent(&a2, &g2, &temp2);
+  x_val1 = a1.gyro.x - accel_center_x;
+  y_val1 = a1.gyro.y - accel_center_y;
+  z_val1 = a1.gyro.z - accel_center_z;
+  x_val2 = a2.gyro.x - accel_center_x;
+  y_val2 = a2.gyro.y - accel_center_y;
+  z_val2 = a2.gyro.z - accel_center_z;
+  tilt(x_val1, y_val1,z_val1, 0);
+  tilt(x_val2, y_val2,z_val2, 1);
   tilt_suit = accel_angle_y2;
   tilt_pilot = accel_angle_y1;
   tilt_error = tilt_pilot - tilt_suit;
@@ -375,15 +385,11 @@ void tilt_setup()
   mpu2.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ);
 }
-void tilt()
+void tilt(float a_x,float a_y,float a_z,bool gyro)
 {
-  mpu1.getEvent(&a1, &g1, &temp1);
-  x_val1 = a1.gyro.x - accel_center_x;
-  y_val1 = a1.gyro.y - accel_center_y;
-  z_val1 = a1.gyro.z - accel_center_z;
-  x_square1 = (x_val1*x_val1);
-  y_square1 = (y_val1*y_val1);
-  z_square1 = (z_val1*z_val1);
+  x_square1 = (a_x*a_x);
+  y_square1 = (a_y*a_y);
+  z_square1 = (a_z*a_z);
   result1 = sqrt(y_square1 + z_square1);
   result1 = x_val1/result1;
   accel_angle_x1 = atan(result1);
@@ -391,21 +397,6 @@ void tilt()
   result1 = sqrt(x_square1 + z_square1);
   result1 = y_val1/result1;
   accel_angle_y1 = atan(result1);
-  //Serial.println(accel_angle_y1);
-  
-  mpu2.getEvent(&a2, &g2, &temp2);
-  x_val2 = a2.gyro.x - accel_center_x;
-  y_val2 = a2.gyro.y - accel_center_y;
-  z_val2 = a2.gyro.z - accel_center_z;
-  x_square2 = (x_val2*x_val2);
-  y_square2 = (y_val2*y_val2);
-  z_square2 = (z_val2*z_val2);
-  result2 = sqrt(y_square2 + z_square2);
-  result2 = x_val2/result2;
-  accel_angle_x2 = atan(result2);
-  //Serial.print(accel_angle_x2); Serial.print("   ");
-  result2 = sqrt(x_square2 + z_square2);
-  result2 = y_val2/result2;
-  accel_angle_y2 = atan(result2);
-  //Serial.println(accel_angle_y2);
+  if(gyro) accel_angle_y1 = atan(result1);
+  else accel_angle_y2 = atan(result1);
 }
