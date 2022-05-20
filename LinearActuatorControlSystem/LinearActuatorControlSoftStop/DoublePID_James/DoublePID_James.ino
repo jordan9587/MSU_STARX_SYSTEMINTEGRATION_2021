@@ -24,7 +24,7 @@ const double gyro3[] = {-0.0511, -0.0076, -0.0019};
 const double gyro4[] = {-0.0588, -0.0185, -0.0298};
 const double gyro5[] = {-0.0231, -0.0526, -0.0486};
 const double gyro6[] = {-0.0254, -0.0077, -0.0045};
-const double gyro7[] = {-0.1019, -0.041, -0.0028};
+const double gyro7[] = {-0.1003, -0.0366, -0.0014};
 const double gyro8[] = {-0.0791, -0.027, -0.0346};
 //variable that holds the specific gyro offset
 double X_OFFSET = 0;
@@ -53,7 +53,7 @@ PID_stop
 This PID is needed as this PID goes by displacment instead of speed
 */
 double to_standing_error;
-double setpoint = 3.75;   //the point that is considered to standing postion in inches
+double setpoint = 6.125;   //the point that is considered to standing postion in inches
 double HP_stop = 50, HI_stop = 20, HD_stop = 0;  //these are the parameters to the PID
 PID StoppingPID(&displacement, &outputSpeed ,&setpoint, HP_stop, HI_stop, HD_stop,P_ON_M, DIRECT);
 bool to_standing_status = false; //keeps track if PID is on or off
@@ -105,7 +105,7 @@ void setup()
   mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
   mpu.setGyroRange(MPU6050_RANGE_1000_DEG);
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
-  offsetSwitch(5); //Check the gyro number connected to the arduino
+  offsetSwitch(7); //Check the gyro number connected to the arduino
 }
 
 void loop() 
@@ -114,16 +114,16 @@ void loop()
   mpu.getEvent(&a, &g, &temp);
   
   //Sets the gyro value to 0 if it is below the threshold
-  if(abs(g.gyro.y - Y_OFFSET) <= 0.08)  corrected_Y = 0;
-  else  corrected_Y = g.gyro.y - Y_OFFSET;   
+  if(abs(g.gyro.x - X_OFFSET) <= 0.08)  corrected_Y = 0;
+  else  corrected_X = g.gyro.x - X_OFFSET;   
   
   pwm_read_values();
-  desiredSpeed = abs(geometry(corrected_Y, displacement));
-  desiredSpeed2 = geometry(corrected_Y, displacement);
-  Mdirection(corrected_Y);
+  desiredSpeed = abs(geometry(corrected_X, displacement));
+  desiredSpeed2 = geometry(corrected_X, displacement);
+  Mdirection(corrected_X);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
-  Serial.print(corrected_Y);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
+  Serial.print(corrected_X);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
 
 //////////////////////// TO standing implementation
   if((digitalRead(TO_STANDING))) toStanding();
