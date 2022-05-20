@@ -4,78 +4,92 @@
 
 Adafruit_MPU6050 mpu1;
 Adafruit_MPU6050 mpu2;
-double Acc1[3]; double Acc2[3];
-double Angle1[3]; double Angle2[3]; 
-double theta1[3]; double theta2[3];
-int minVal=265;
-int maxVal=402;
-enum axis{x,y,z};
+float x_val1, y_val1, z_val1, result1;
+float x_square1, y_square1, z_square1;
+float accel_angle_x1, accel_angle_y1;
+sensors_event_t a1, g1, temp1;
+
+float x_val2, y_val2, z_val2, result2;
+float x_square2, y_square2, z_square2;
+float accel_angle_x2, accel_angle_y2;
+sensors_event_t a2, g2, temp2;
+
+float accel_center_x = 0.66;
+float accel_center_y = -0.12;
+float accel_center_z = 8.60;
+
 void setup() 
 {
   Serial.begin(9600);
   pinMode(LED_BUILTIN,OUTPUT);
-  if (!mpu1.begin(0x68)) 
-  {
-    digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
-    Serial.println("MPU1 not found");
-    while (1) 
-    {
-      delay(10);
-    }
-  }
-  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
-  //range settings
-  mpu1.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu1.setGyroRange(MPU6050_RANGE_1000_DEG);
-  mpu1.setFilterBandwidth(MPU6050_BAND_21_HZ);
-    if (!mpu2.begin(0x69)) 
-  {
-    digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
-    Serial.println("MPU2 not found");
-    while (1) 
-    {
-      delay(10);
-    }
-  }
-  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
-  //range settings
-  mpu2.setAccelerometerRange(MPU6050_RANGE_8_G);
-  mpu2.setGyroRange(MPU6050_RANGE_1000_DEG);
-  mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ);
+  tilt_setup();
 }
 
 void loop() 
 {
-  sensors_event_t a1, g1, temp1;
-  mpu1.getEvent(&a1, &g1, &temp1);
-  sensors_event_t a2, g2, temp2;
-  mpu2.getEvent(&a2, &g2, &temp2);
-  Acc1[x] = a1.gyro.x;
-  Acc1[y] = a1.gyro.y;
-  Acc1[z] = a1.gyro.z;
-  Acc1[x] = a1.gyro.x;
-  Acc1[y] = a1.gyro.y;
-  Acc1[z] = a1.gyro.z;
-  angleXYZ();
-  
-  //Serial.print(g1.gyro.y); Serial.print("  "); Serial.println(g2.gyro.y);
+  tilt();
 }
-void angleXYZ()
+void tilt_setup()
 {
-  Angle1[x] = map(Acc1[x],minVal,maxVal,-90,90);
-  Angle1[y] = map(Acc1[y],minVal,maxVal,-90,90);
-  Angle1[z] = map(Acc1[z],minVal,maxVal,-90,90);
-  Angle2[x] = map(Acc2[x],minVal,maxVal,-90,90);
-  Angle2[y] = map(Acc2[y],minVal,maxVal,-90,90);
-  Angle2[z] = map(Acc2[z],minVal,maxVal,-90,90);
-  theta1[x] = RAD_TO_DEG * (atan2(-Angle1[y], -Angle1[z])+PI);
-  theta1[y] = RAD_TO_DEG * (atan2(-Angle1[x], -Angle1[z])+PI);
-  theta1[z] = RAD_TO_DEG * (atan2(-Angle1[y], -Angle1[x])+PI);
-  theta2[x] = RAD_TO_DEG * (atan2(-Angle2[y], -Angle2[z])+PI);
-  theta2[y] = RAD_TO_DEG * (atan2(-Angle2[x], -Angle2[z])+PI);
-  theta2[z] = RAD_TO_DEG * (atan2(-Angle2[y], -Angle2[x])+PI);
+  if (!mpu1.begin(0x68)) 
+  {
+    digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
+    while (1) 
+    {
+      delay(10);
+    }
+  }
+  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
+  //range settings
+  mpu1.setAccelerometerRange(MPU6050_RANGE_2_G);
+  mpu1.setGyroRange(MPU6050_RANGE_1000_DEG);
+  mpu1.setFilterBandwidth(MPU6050_BAND_21_HZ);
   
-  Serial.print("Angle x: ");
-  Serial.println(theta1[x]);
+  if (!mpu2.begin(0x69)) 
+  {
+    digitalWrite(LED_BUILTIN,HIGH); //built in led high means the arduino failed to recognize the gyro
+    while (1) 
+    {
+      delay(10);
+    }
+  }
+  else  digitalWrite(LED_BUILTIN,LOW); //led low means gyro is connected properly
+  //range settings
+  mpu2.setAccelerometerRange(MPU6050_RANGE_2_G);
+  mpu2.setGyroRange(MPU6050_RANGE_1000_DEG);
+  mpu2.setFilterBandwidth(MPU6050_BAND_21_HZ);
+}
+void tilt()
+{
+  mpu1.getEvent(&a1, &g1, &temp1);
+  x_val1 = a1.gyro.x - accel_center_x;
+  y_val1 = a1.gyro.y - accel_center_y;
+  z_val1 = a1.gyro.z - accel_center_z;
+  x_square1 = (x_val1*x_val1);
+  y_square1 = (y_val1*y_val1);
+  z_square1 = (z_val1*z_val1);
+  result1 = sqrt(y_square1 + z_square1);
+  result1 = x_val1/result1;
+  accel_angle_x1 = atan(result1);
+  //Serial.print(accel_angle_x1); Serial.print("   ");
+  result1 = sqrt(x_square1 + z_square1);
+  result1 = y_val1/result1;
+  accel_angle_y1 = atan(result1);
+  //Serial.println(accel_angle_y1);
   
+  mpu2.getEvent(&a2, &g2, &temp2);
+  x_val2 = a2.gyro.x - accel_center_x;
+  y_val2 = a2.gyro.y - accel_center_y;
+  z_val2 = a2.gyro.z - accel_center_z;
+  x_square2 = (x_val2*x_val2);
+  y_square2 = (y_val2*y_val2);
+  z_square2 = (z_val2*z_val2);
+  result2 = sqrt(y_square2 + z_square2);
+  result2 = x_val2/result2;
+  accel_angle_x2 = atan(result2);
+  Serial.print(accel_angle_x2); Serial.print("   ");
+  result2 = sqrt(x_square2 + z_square2);
+  result2 = y_val2/result2;
+  accel_angle_y2 = atan(result2);
+  Serial.println(accel_angle_y2);
 }
