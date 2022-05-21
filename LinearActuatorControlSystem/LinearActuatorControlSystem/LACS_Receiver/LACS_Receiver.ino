@@ -145,9 +145,9 @@ void loop()
   if(abs(g1.gyro.x - X_OFFSET[1]) <= 0.3)  corrected_X[1] = 0;
   else  corrected_X[1] = g1.gyro.x - X_OFFSET[1];   
   pwm_read_values();
-  desiredSpeed = abs(geometry(corrected_X[1], displacement, hip_ang_vel_x));
+  desiredSpeed = abs(geometry(corrected_X[1], displacement, hip_ang_vel_x ));
   desiredSpeed2 = geometry(corrected_X[1], displacement, hip_ang_vel_x);
-  Mdirection(corrected_X[1]);
+  Mdirection(-corrected_X[1]);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
   Serial.print(corrected_X[1]);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);

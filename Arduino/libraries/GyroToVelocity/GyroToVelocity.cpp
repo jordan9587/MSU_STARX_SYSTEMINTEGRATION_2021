@@ -50,7 +50,7 @@ float geometry(float angularVel, float currentLength, float HipAngVel)
     else if (HIPorKNEE == KNEE)
     {
         currentLength = currentLength + actUnretractedLen;
-        angularVel = angularVel - HipAngVel;
+        angularVel = -(angularVel - HipAngVel);
         //angularVel = angularVel * PI / 180; this line caused issues with the output linearVelocity being too small
         theta[0] = 180 * (atan(kneeLwrMntDistFromKnee / kneeLwrMntDist)) / PI;
         len[0] = sqrt(pow(kneeUpMntDist, 2) + pow(kneeUpMntDistFromKnee, 2));
