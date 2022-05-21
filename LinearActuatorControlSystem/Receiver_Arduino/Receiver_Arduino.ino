@@ -8,7 +8,6 @@ union Onion
     uint8_t     fBytes[sizeof( float )];
     float       fValue;
 };
-
 Onion flt;
 float hip_ang_vel_x;
 void setup( void )

@@ -8,7 +8,6 @@ union Onion
     uint8_t     fBytes[sizeof( float )];
     float       fValue;
 };
-
 Onion flt;
 
 void setup( void )
@@ -37,9 +36,13 @@ void loop( void )
   sensors_event_t a, g, temp;
   mpu.getEvent(&a, &g, &temp);
   flt.fValue = g.gyro.y;
-  Serial.write( '>' );
-  Serial.write( flt.fBytes, sizeof( float ) );
-  Serial.write( '<' );
+  Sender();
   //delay(1000);
     
 }//loop
+void Sender()
+{
+  Serial.write( '>' );
+  Serial.write( flt.fBytes, sizeof( float ) );
+  Serial.write( '<' );
+}

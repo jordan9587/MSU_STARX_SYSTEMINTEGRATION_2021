@@ -59,6 +59,13 @@ double HP_stop = 50, HI_stop = 20, HD_stop = 0;  //these are the parameters to t
 PID StoppingPID(&displacement, &outputSpeed ,&setpoint, HP_stop, HI_stop, HD_stop,P_ON_M, DIRECT);
 bool to_standing_status = false; //keeps track if PID is on or off
 
+union Onion
+{
+    uint8_t     fBytes[sizeof( float )];
+    float       fValue;
+};
+Onion flt;
+
 void setup() 
 {
   //begin serial monitor
@@ -142,7 +149,10 @@ void loop()
   Mdirection(corrected_X[1]);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
-  Serial.print(corrected_X[1]);Serial.print("   "); Serial.print(displacement);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
+  Serial.print(corrected_X[1]);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
+  
+  flt.fValue = corrected_X[1];
+  Sender();
 
 //////////////////////// TO standing implementation
   if((digitalRead(TO_STANDING))) toStanding();
@@ -331,4 +341,10 @@ void offsetSwitch(int gyro, int choice)
             Z_OFFSET[gyro] = gyro8[3];
         break;
     }
+}
+void Sender()
+{
+  Serial.write( '>' );
+  Serial.write( flt.fBytes, sizeof( float ) );
+  Serial.write( '<' );
 }

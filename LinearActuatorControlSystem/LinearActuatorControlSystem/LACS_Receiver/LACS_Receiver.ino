@@ -54,10 +54,18 @@ PID_stop
 This PID is needed as this PID goes by displacment instead of speed
 */
 double to_standing_error;
-double setpoint = 6.125;   //the point that is considered to standing postion in inches
+double setpoint = 7.0625;   //the point that is considered to standing postion in inches
 double HP_stop = 50, HI_stop = 20, HD_stop = 0;  //these are the parameters to the PID
 PID StoppingPID(&displacement, &outputSpeed ,&setpoint, HP_stop, HI_stop, HD_stop,P_ON_M, DIRECT);
 bool to_standing_status = false; //keeps track if PID is on or off
+
+union Onion
+{
+    uint8_t     fBytes[sizeof( float )];
+    float       fValue;
+};
+Onion flt;
+float hip_ang_vel_x;
 
 void setup() 
 {
@@ -91,7 +99,7 @@ void setup()
   loadCompensator.SetMode(AUTOMATIC);
   loadCompensator.SetOutputLimits(0,255);
 
-  HorK(HIP); //Hip or Knee geometry
+  HorK(KNEE); //Hip or Knee geometry
   //Checks for gyroscope
   if (!mpu.begin(0x69)) 
   {
@@ -132,17 +140,17 @@ void loop()
   
   sensors_event_t a1, g1, temp1;
   mpu.getEvent(&a1, &g1, &temp1);
-  
+  hip_ang_vel_x = Receive();
   //Sets the gyro value to 0 if it is below the threshold
   if(abs(g1.gyro.x - X_OFFSET[1]) <= 0.3)  corrected_X[1] = 0;
   else  corrected_X[1] = g1.gyro.x - X_OFFSET[1];   
   pwm_read_values();
-  desiredSpeed = abs(geometry(corrected_X[1], displacement));
-  desiredSpeed2 = geometry(corrected_X[1], displacement);
+  desiredSpeed = abs(geometry(corrected_X[1], displacement, hip_ang_vel_x));
+  desiredSpeed2 = geometry(corrected_X[1], displacement, hip_ang_vel_x);
   Mdirection(corrected_X[1]);
   loadCompensator.Compute();
   analogWrite(ANV,outputSpeed);
-  Serial.print(corrected_X[1]);Serial.print("   "); Serial.print(displacement);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
+  Serial.print(corrected_X[1]);Serial.print("   ");Serial.print(currentSpeed);Serial.print("   ");Serial.println(desiredSpeed);
 
 //////////////////////// TO standing implementation
   if((digitalRead(TO_STANDING))) toStanding();
@@ -330,5 +338,47 @@ void offsetSwitch(int gyro, int choice)
             Y_OFFSET[gyro] = gyro8[2];
             Z_OFFSET[gyro] = gyro8[3];
         break;
+    }
+}
+float Receive()
+{
+  byte ch, ch1, idx;
+  bool done;
+  float dummy;
+        
+    if( Serial.available() > 0 )
+    {
+        if( Serial.read() == '>' )
+        {
+          done = false;
+          idx = 0;
+          while( !done )
+          {
+            if( Serial.available() > 0 )
+            {
+              ch = Serial.read();
+              if( ch == '<' )
+              done = true;
+              else
+              {
+                if( idx < sizeof( float ) )
+                            flt.fBytes[idx++] = ch;
+              }//else
+            }//if
+                   
+          }//while
+          //Serial.print( "Float value received: " ); Serial.println( flt.fValue, 4 );
+            
+        }//if
+        
+    }//if
+    if(flt.fValue > -9 && flt.fValue <9)
+    {
+      dummy = flt.fValue; 
+      return flt.fValue;
+    }
+    else
+    {
+      return dummy;
     }
 }
